@@ -30,8 +30,8 @@ void * delete_listnode (list_t * list, void * data);	/* delete node that has dat
 void * search_listnode (list_t * list, void * d1, int (* cmp)(void * d1, void * d2));
 
 
-#define LIST_FOREACH(li, linode) LL_FOREACH (li->head, linode)
+#define MYLIST_FOREACH(li, linode) LL_FOREACH (li->head, linode)
 
-#define LIST_COUNT(li) li->count
+#define MYLIST_COUNT(li) li->count
 
 #endif /* _LIST_H_ */

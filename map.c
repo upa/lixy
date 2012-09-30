@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <openssh/sha.h>
 #include <openssl/hmac.h>
+#include <openssl/sha.h>
+
 
 #include "lisp.h"
 #include "map.h"
 #include "error.h"
+#include "common.h"
 #include "sockaddrmacro.h"
 
 #define EXTRACT_LISPAFI(sa) \
@@ -17,11 +19,12 @@ void hmac(char *md, void *buf, size_t size, char * key, int keylen);
 
 
 int
-set_lisp_map_request (char * buf, int len, struct prefix * eid)
+set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 {
 	int irc = -1, pktlen = 0;
 	char * ptr;
-	struct addr_tuple * tmploc;
+	listnode_t * linode;
+	struct locator * tmploc;
 	struct lisp_map_request * req;
 	
 	/* Create Header of Request Message */
@@ -35,13 +38,14 @@ set_lisp_map_request (char * buf, int len, struct prefix * eid)
 	pktlen += 2;
 	
 	/* set ITR LOC Info */
-	LL_FOREACH (lisp.loc_tuple, tmploc) {
+	MYLIST_FOREACH (lisp.loc_tuple, linode) {
+		tmploc = (struct locator *)(linode->data);
 		ptr = buf + pktlen;
-		switch (EXTRACT_FAMILY (tmploc->addr)) {
+		switch (EXTRACT_FAMILY (tmploc->loc_addr)) {
 		case AF_INET : 
 			*((u_int16_t *) ptr) = htons (LISP_AFI_IPV4);
 			ptr += 2;
-			memcpy (ptr, &(EXTRACT_INADDR(tmploc->addr)),
+			memcpy (ptr, &(EXTRACT_INADDR(tmploc->loc_addr)),
 				sizeof (struct in_addr));
 			pktlen += 2 + sizeof (struct in_addr);
 			break;
@@ -49,7 +53,7 @@ set_lisp_map_request (char * buf, int len, struct prefix * eid)
 		case AF_INET6 :
 			*((u_int16_t *) ptr) = htons (LISP_AFI_IPV6);
 			ptr += 2;
-			memcpy (ptr, &(EXTRACT_IN6ADDR(tmploc->addr)),
+			memcpy (ptr, &(EXTRACT_IN6ADDR(tmploc->loc_addr)),
 				sizeof (struct in6_addr));
 			pktlen += sizeof (struct in6_addr);
 			break;
@@ -63,24 +67,24 @@ set_lisp_map_request (char * buf, int len, struct prefix * eid)
 	}
 	req->irc = irc;
 	
-	/* Set EID */
+	/* Set Request Prefix */
 	ptr = buf + (++pktlen);	       		/* reseved */
 
-	*((u_int8_t *)ptr) = eid->mask_len;	/* EID Mask-len */
+	*((u_int8_t *)ptr) = prefix->bitlen;	/* EID Mask-len */
 	ptr = buf + (++pktlen);	
 
 	/* EID AFI and Prefix*/
-	switch (EXTRACT_FAMILY (eid->addr)) {
+	switch (EXTRACT_FAMILY (prefix->family)) {
 	case AF_INET :
 		*((u_int16_t *)ptr) = htons (LISP_AFI_IPV4);
 		ptr = buf + (++pktlen);	
-		memcpy (ptr, &(EXTRACT_INADDR (eid->addr)), sizeof (struct in_addr));
+		memcpy (ptr, &(prefix->add.sin), sizeof (struct in_addr));
 		pktlen += sizeof (struct in_addr);
 		break;
 	case AF_INET6 :
 		*((u_int16_t *)ptr) = htons (LISP_AFI_IPV6);
 		ptr = buf + (++pktlen);	
-		memcpy (ptr, &(EXTRACT_IN6ADDR (eid->addr)), sizeof (struct in6_addr));
+		memcpy (ptr, &(prefix->add.sin6), sizeof (struct in6_addr));
 		pktlen += sizeof (struct in6_addr);
 		break;
 	}
@@ -92,7 +96,7 @@ set_lisp_map_request (char * buf, int len, struct prefix * eid)
 
 
 int 
-set_lisp_map_register (char * buf, int len, struct eid_tuple * eid)
+set_lisp_map_register (char * buf, int len, struct eid * eid)
 {
 	int pktlen = 0;
 	char * ptr;
@@ -116,13 +120,14 @@ set_lisp_map_register (char * buf, int len, struct eid_tuple * eid)
 	memset (rec, 0, sizeof (struct lisp_record));
 	rec->record_ttl = htonl (LISP_DEFAULT_RECORD_TTL);
 	rec->locator_count = 1;
-	rec->eid_mask_len = eid->eid_prefix.mask_len;
-	rec->eid_prefix_afi = htons (EXTRACT_LISPAFI (eid->eid_prefix.addr));
+	rec->eid_mask_len = eid->prefix.bitlen;
+	rec->eid_prefix_afi = htons (EXTRACT_LISPAFI (eid->prefix.family));
 	
 	/* Set Locator */
 	pktlen += sizeof (struct lisp_locator);
 	loc = (struct lisp_locator *) (buf + sizeof (struct lisp_map_register) + 
-				       EXTRACT_ADDRLEN (eid->eid_prefix.addr));
+				       (eid->prefix.family == AF_INET) ? 
+				       sizeof (struct in_addr) : sizeof (struct in6_addr));
 	memset (loc, 0, sizeof (struct lisp_record));
 	loc->priority = eid->locator.priority;
 	loc->weight = eid->locator.weight;

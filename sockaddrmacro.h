@@ -27,8 +27,8 @@
 	(EXTRACT_FAMILY(sa) == AF_INET6) ? sizeof (struct in6_addr) : -1	\
 
 
-
 #define EXTRACT_PORT(sa) (((struct sockaddr_in *)&(sa))->sin_port)
+
 
 #define INET_STOP(sa, c) \
         do {                                                            \
