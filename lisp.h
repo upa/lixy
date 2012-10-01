@@ -104,7 +104,7 @@ struct lisp_hdr {
 
 
 struct lisp_map_request {
-#ifdef __BYTE_ORDER == __LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 	u_int8_t	S_flag:1;
 	u_int8_t	P_flag:1;
 	u_int8_t	M_flag:1;
@@ -117,7 +117,7 @@ struct lisp_map_request {
 	u_int8_t	A_flag:1;
 	u_int8_t	type:4;
 #endif
-#ifdef __BYTE_ORDER == __LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 	u_int8_t	rsv:6;
 	u_int8_t	s_flag:1;
 	u_int8_t	p_flag:1;
@@ -126,7 +126,7 @@ struct lisp_map_request {
 	u_int8_t	rsv:6;
 	u_int8_t	s_flag:1;
 #endif
-#ifdef __BYTE_ORDER == __LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 	u_int8_t	irc:5;
 	u_int8_t	rsv2:3;
 #else
@@ -165,13 +165,13 @@ struct lisp_map_request {
  */
 
 struct lisp_map_reply {
-#ifdef __BYTE_ORDER == __LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 	u_int8_t	rsv:1;
 	u_int8_t	S_flag:1;
 	u_int8_t	E_flag:1;
 	u_int8_t	P_flag:1;
 	u_int8_t	type:4;
-#end
+#else
 	u_int8_t	type:4;
 	u_int8_t	P_flag:1;
 	u_int8_t	E_flag:1;
@@ -239,13 +239,32 @@ struct lisp_record {
 	u_int32_t	record_ttl;
 	u_int8_t	locator_count;
 	u_int8_t	eid_mask_len;
-	u_int8_t	action;
-	u_int8_t	map_version;
-	u_int8_t	eid_prefix_afi;
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+	u_int8_t	rsv:4;
+	u_int8_t	A_flag:1;
+	u_int8_t	act:3;
+#else
+	u_int8_t	act:3;
+	u_int8_t	A_flag:1;
+	u_int8_t	rsv:4;
+#endif
+
+	u_int8_t	rsv2;
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+	u_int8_t	map_version_hi: 4;
+	u_int8_t	rsv3:4;
+#else
+	u_int8_t	rsv3:4;
+	u_int8_t	map_version_hi: 4;
+#endif
+	u_int8_t	map_version_low;
+	u_int16_t	eid_prefix_afi;
 };
 
+
 struct lisp_map_register {
-#ifdef __BYTE_ORDER == __LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 	u_int8_t	rsv:3;
 	u_int8_t	P_flag:1;
 	u_int8_t	type:4;
@@ -255,7 +274,7 @@ struct lisp_map_register {
 	u_int8_t	rsv:3;
 #endif
 	u_int8_t 	rsv2;
-#ifdef __BYTE_ORDER == __LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 	u_int8_t	M_flag:1;
 	u_int8_t	rsv3:7;
 #else
@@ -304,7 +323,7 @@ struct lisp_map_register {
  */
 
 struct lisp_map_notify {
-#ifdef __BYTE_ORDER == __LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 	u_int8_t	rsv:4;
 	u_int8_t	type:4;
 #else

@@ -12,8 +12,9 @@
 #include "sockaddrmacro.h"
 
 #define EXTRACT_LISPAFI(sa) \
-	((EXTRACT_FAMILY (sa) == AF_INET) ? LISP_AFI_IPV4	\
-	 : LISP_AFI_IPV6)
+	((EXTRACT_FAMILY (sa) == AF_INET) ? LISP_AFI_IPV4 : LISP_AFI_IPV6)
+#define AF_TO_LISPAFI(af) \
+	((af == AF_INET) ? LISP_AFI_IPV4 : LISP_AFI_IPV6)
 
 void hmac(char *md, void *buf, size_t size, char * key, int keylen);
 
@@ -112,7 +113,7 @@ set_lisp_map_register (char * buf, int len, struct eid * eid)
 	reg->record_count = 1;
 	reg->P_flag = 1;
 	reg->key_id = htons (1);
-	reg->auth_data_len = SHA_DIGEST_LENGTH;
+	reg->auth_data_len = htons (SHA_DIGEST_LENGTH);
 	
 	/* Set Record */
 	pktlen += sizeof (struct lisp_record);
@@ -121,7 +122,7 @@ set_lisp_map_register (char * buf, int len, struct eid * eid)
 	rec->record_ttl = htonl (LISP_DEFAULT_RECORD_TTL);
 	rec->locator_count = 1;
 	rec->eid_mask_len = eid->prefix.bitlen;
-	rec->eid_prefix_afi = htons (EXTRACT_LISPAFI (eid->prefix.family));
+	rec->eid_prefix_afi = htons (AF_TO_LISPAFI (eid->prefix.family));
 	
 	ptr = (char *) (rec + 1);
 	switch (eid->prefix.family) {
@@ -138,6 +139,7 @@ set_lisp_map_register (char * buf, int len, struct eid * eid)
 	/* Set Locator */
 	pktlen += sizeof (struct lisp_locator);
 	loc = (struct lisp_locator *) (buf + sizeof (struct lisp_map_register) + 
+				       sizeof (struct lisp_record) +
 				       ((eid->prefix.family == AF_INET) ? 
 					sizeof (struct in_addr) : 
 					sizeof (struct in6_addr)));
