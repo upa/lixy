@@ -263,6 +263,7 @@ struct lisp_map_register {
  	u_int8_t	M_flag:1;
 #endif
 	u_int8_t	record_count;
+
 	u_int32_t	nonce[2];
 	u_int16_t	key_id;
 	u_int16_t	auth_data_len;

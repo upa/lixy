@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <utlist.h>
 
+#include "lisp.h"
 #include "list/list.h"
 #include "patricia/patricia.h"
 

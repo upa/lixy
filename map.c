@@ -108,7 +108,7 @@ set_lisp_map_register (char * buf, int len, struct eid * eid)
 	pktlen += sizeof (struct lisp_map_register);
 	reg = (struct lisp_map_register *) buf;
 	memset (reg, 0, sizeof (struct lisp_map_register));
-	reg->type = LISP_MAP_RGST;
+	reg->type = 3;
 	reg->record_count = 1;
 	reg->P_flag = 1;
 	reg->key_id = htons (1);
@@ -123,12 +123,25 @@ set_lisp_map_register (char * buf, int len, struct eid * eid)
 	rec->eid_mask_len = eid->prefix.bitlen;
 	rec->eid_prefix_afi = htons (EXTRACT_LISPAFI (eid->prefix.family));
 	
+	ptr = (char *) (rec + 1);
+	switch (eid->prefix.family) {
+	case AF_INET :
+		pktlen += sizeof (struct in_addr);
+		memcpy (ptr, &(eid->prefix.add.sin), sizeof (struct in_addr));
+		break;
+	case AF_INET6 :
+		pktlen += sizeof (struct in6_addr);
+		memcpy (ptr, &(eid->prefix.add.sin6), sizeof (struct in6_addr));
+		break;
+	}
+
 	/* Set Locator */
 	pktlen += sizeof (struct lisp_locator);
 	loc = (struct lisp_locator *) (buf + sizeof (struct lisp_map_register) + 
-				       (eid->prefix.family == AF_INET) ? 
-				       sizeof (struct in_addr) : sizeof (struct in6_addr));
-	memset (loc, 0, sizeof (struct lisp_record));
+				       ((eid->prefix.family == AF_INET) ? 
+					sizeof (struct in_addr) : 
+					sizeof (struct in6_addr)));
+	memset (loc, 0, sizeof (struct lisp_locator));
 	loc->priority = eid->locator.priority;
 	loc->weight = eid->locator.weight;
 	loc->m_priority = eid->locator.m_priority;
@@ -165,7 +178,6 @@ process_lisp_map_reply (struct lisp_map_reply * maprep)
 {
 	return 0;
 }
-
 
 
 void
