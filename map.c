@@ -24,67 +24,75 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 {
 	int irc = -1, pktlen = 0;
 	char * ptr;
+	u_int16_t tmpafi;
 	listnode_t * linode;
 	struct locator * tmploc;
 	struct lisp_map_request * req;
+	struct lisp_map_request_record * reqrec;
 	
 	/* Create Header of Request Message */
-	pktlen = sizeof (struct lisp_map_request) + 2;
+	pktlen = sizeof (struct lisp_map_request);
+	req = (struct lisp_map_request *) buf;
 	memset (req, 0, sizeof (struct lisp_map_request));
 	req->type = LISP_MAP_RQST;
+	req->record_count = 1;
 	
 	/* set Source EID */
 	ptr = buf + pktlen;
-	* ((u_int8_t *) ptr) = 0;
-	pktlen += 2;
+	tmpafi = 0;
+	memcpy (ptr, &tmpafi, sizeof (tmpafi));
+	pktlen += sizeof (tmpafi);
 	
 	/* set ITR LOC Info */
+	if (lisp.loc_tuple == NULL)
+		return -1;
+
 	MYLIST_FOREACH (lisp.loc_tuple, linode) {
 		tmploc = (struct locator *)(linode->data);
 		ptr = buf + pktlen;
 		switch (EXTRACT_FAMILY (tmploc->loc_addr)) {
 		case AF_INET : 
-			*((u_int16_t *) ptr) = htons (LISP_AFI_IPV4);
-			ptr += 2;
-			memcpy (ptr, &(EXTRACT_INADDR(tmploc->loc_addr)),
+			tmpafi = htons (LISP_AFI_IPV4);
+			memcpy (ptr, &tmpafi, sizeof (tmpafi));
+			pktlen += sizeof (tmpafi);
+			memcpy (buf + pktlen, &(EXTRACT_INADDR(tmploc->loc_addr)),
 				sizeof (struct in_addr));
-			pktlen += 2 + sizeof (struct in_addr);
+			pktlen += sizeof (struct in_addr);
 			break;
 
 		case AF_INET6 :
-			*((u_int16_t *) ptr) = htons (LISP_AFI_IPV6);
-			ptr += 2;
-			memcpy (ptr, &(EXTRACT_IN6ADDR(tmploc->loc_addr)),
+			tmpafi = htons (LISP_AFI_IPV6);
+			memcpy (ptr, &tmpafi, sizeof (tmpafi));
+			pktlen += sizeof (tmpafi);
+			memcpy (buf + pktlen, &(EXTRACT_IN6ADDR(tmploc->loc_addr)),
 				sizeof (struct in6_addr));
 			pktlen += sizeof (struct in6_addr);
 			break;
 		}
-		* ((u_int8_t *) ptr ) = 0;
 		irc++;
 	}
-	if (--irc < 0) {
+	if (irc < 0) {
 		error_warn ("%s : ITR Count is -1 (0)", __func__);
 		return -1;
 	}
 	req->irc = irc;
 	
 	/* Set Request Prefix */
-	ptr = buf + (++pktlen);	       		/* reseved */
-
-	*((u_int8_t *)ptr) = prefix->bitlen;	/* EID Mask-len */
-	ptr = buf + (++pktlen);	
+	reqrec = (struct lisp_map_request_record *)(buf + pktlen);
+	pktlen += sizeof (struct lisp_map_request_record);
+	memset (reqrec, 0, sizeof (struct lisp_map_request_record));
+	reqrec->eid_mask_len = prefix->bitlen;
+	reqrec->eid_prefix_afi = htons (AF_TO_LISPAFI (prefix->family));
 
 	/* EID AFI and Prefix*/
-	switch (EXTRACT_FAMILY (prefix->family)) {
+	ptr = buf + pktlen;
+
+	switch (prefix->family) {
 	case AF_INET :
-		*((u_int16_t *)ptr) = htons (LISP_AFI_IPV4);
-		ptr = buf + (++pktlen);	
 		memcpy (ptr, &(prefix->add.sin), sizeof (struct in_addr));
 		pktlen += sizeof (struct in_addr);
 		break;
 	case AF_INET6 :
-		*((u_int16_t *)ptr) = htons (LISP_AFI_IPV6);
-		ptr = buf + (++pktlen);	
 		memcpy (ptr, &(prefix->add.sin6), sizeof (struct in6_addr));
 		pktlen += sizeof (struct in6_addr);
 		break;

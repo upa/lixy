@@ -25,7 +25,7 @@ void destroy_list (list_t * list);		/* free user date */
 void delete_list (list_t * list);		/* Does not free user date */
 void foreach_list (list_t * list, void (* func)(void * data));
 
-listnode_t * add_listnode (list_t * list, void * data);
+void * append_listnode (list_t * list, void * data);
 void * delete_listnode (list_t * list, void * data);	/* delete node that has data ptr */
 void * search_listnode (list_t * list, void * d1, int (* cmp)(void * d1, void * d2));
 

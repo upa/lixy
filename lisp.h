@@ -137,6 +137,11 @@ struct lisp_map_request {
 	u_int32_t	nonce[2];
 };
 
+struct lisp_map_request_record {
+	u_int8_t	rsv;
+	u_int8_t	eid_mask_len;
+	u_int16_t	eid_prefix_afi;
+};
 
 /*
   LISP Map Reply Message

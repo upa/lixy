@@ -155,7 +155,7 @@ error_printf(int errnoflag, int level, const char *fmt, va_list ap)
 
     if ( error_syslog ) {
         /* output to syslog */
-        syslog(level, buf);
+        syslog(level, "%s", buf);
     } else {
         fflush(stdout);         /* in case stdout and stderr are the same */
         fputs(buf, stderr);

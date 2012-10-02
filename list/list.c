@@ -61,8 +61,8 @@ foreach_list (list_t * list, void (* func)(void * data))
 	return;
 }
 
-listnode_t * 
-add_listnode (list_t * list, void * data)
+void * 
+append_listnode (list_t * list, void * data)
 {
 	listnode_t * node;
 	
@@ -76,7 +76,7 @@ add_listnode (list_t * list, void * data)
 	LL_APPEND (list->head, node);
 	list->count++;
 
-	return node;
+	return data;
 }
 
 void *
