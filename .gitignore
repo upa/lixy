@@ -1,2 +1,6 @@
 *a.out*
 *.o
+
+test-map-req
+test-map-reg
+*.dSYM

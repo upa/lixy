@@ -24,11 +24,11 @@ main (int argc, char * argv[])
 	struct in_addr eid_addr;
 	
 
-	eid_addr.s_addr = inet_addr ("10.10.0.0");
+	eid_addr.s_addr = inet_addr ("192.168.0.0");
 
 	memset (&loc, 0, sizeof (loc));
 	(EXTRACT_FAMILY (loc.loc_addr)) = AF_INET;
-	(EXTRACT_INADDR (loc.loc_addr)).s_addr = inet_addr ("10.0.0.2");
+	(EXTRACT_INADDR (loc.loc_addr)).s_addr = inet_addr ("163.221.14.218");
 
 	memset (&eid, 0, sizeof (eid));
 	strcpy (eid.authkey, "hoge");
@@ -67,10 +67,21 @@ main (int argc, char * argv[])
 	freeaddrinfo (res);
 	printf ("socket is %d\n", sock);
 
-	if (sendto (sock, buf, len, 0, 
-		    (struct sockaddr *)&mapsrv, sizeof (mapsrv)) < 0) {
-		perror ("sendto");
+	printf ("initial regsiter ?\n");
+	int n;
+	for (n = 0; n < 5; n++) {
+		printf ("count %d\n", n);
+		if (sendto (sock, buf, len, 0, 
+			    (struct sockaddr *)&mapsrv, sizeof (mapsrv)) < 0) {
+			perror ("sendto");
+		}
+		sleep (1);
 	}
+
+	printf ("honban\n");
+	if (sendto (sock, buf, len, 0, 
+		    (struct sockaddr *)&mapsrv, sizeof (mapsrv)) < 0) 
+		perror ("sendto");
 	
 
 	return 0;

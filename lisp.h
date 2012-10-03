@@ -75,6 +75,20 @@ struct lisp_hdr {
 #define LISP_MAP_NTFY		4
 #define LISP_ECAP_CTL		8
 
+/* LISP Encapsulated Control Packet */
+struct lisp_control {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+	u_int8_t	rsv:3;
+	u_int8_t	S_flag:1;
+	u_int8_t	type:4;
+#else
+	u_int8_t	type:4;
+	u_int8_t	S_flag:1;
+	u_int8_t	rsv:3;
+#endif
+	u_int8_t	rsv2[3];
+};
+
 
 /*
   LISP Map Request Meesage

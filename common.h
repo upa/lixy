@@ -35,7 +35,7 @@ struct lisp {
 	int udp_socket;	/* socket for sending encapsulated LISP packet		*/
 	
 	list_t * eid_tuple;			/* Local EID List		*/
-	list_t * loc_tuple;			/* Local Locator Address List	*/
+	struct locator loc;			/* Local Locator Address 	*/
 	struct sockaddr_storage mapsrvaddr;	/* Map Server Address		*/
 };
 
