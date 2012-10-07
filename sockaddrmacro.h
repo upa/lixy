@@ -9,6 +9,13 @@
 #include <arpa/inet.h>
 
 
+/* for BSD struct in6_addr compatibility */
+#ifndef linux
+#define s6_addr16               __u6_addr.__u6_addr16
+#define s6_addr32               __u6_addr.__u6_addr32
+#endif
+
+
 #define EXTRACT_INADDR(sa) \
         (((struct sockaddr_in *)(&(sa)))->sin_addr)
 
@@ -101,13 +108,13 @@
 			  ((struct sockaddr_in6 *)sa62)->sin6_addr)
 
 #define COMPARE_SADDR_IN(in1, in2)              \
-        (in1.s_addr == in2.s_addr) ? 1 : -1
+        ((in1).s_addr == (in2).s_addr) ? 1 : -1
 
 #define COMPARE_SADDR_IN6(in61, in62)                           \
-        (in61.s6_addr32[0] != in62.s6_addr32[0]) ? -1 :         \
-        (in61.s6_addr32[1] != in62.s6_addr32[1]) ? -1 :         \
-        (in61.s6_addr32[2] != in62.s6_addr32[2]) ? -1 :         \
-        (in61.s6_addr32[3] != in62.s6_addr32[3]) ? -1 : 1       \
+        ((in61).s6_addr32[0] != (in62).s6_addr32[0]) ? -1 :         \
+        ((in61).s6_addr32[1] != (in62).s6_addr32[1]) ? -1 :         \
+        ((in61).s6_addr32[2] != (in62).s6_addr32[2]) ? -1 :         \
+        ((in61).s6_addr32[3] != (in62).s6_addr32[3]) ? -1 : 1       \
 
 #define COMPARE_INET6_PREFIX(a, b)					\
         (a.s6_addr32[0] == b.s6_addr32[0] && a.s6_addr32[1] == b.s6_addr32[1])

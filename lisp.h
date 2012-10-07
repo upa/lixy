@@ -35,7 +35,21 @@
 */
 
 struct lisp_hdr {
-	u_int8_t flags;
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+	u_int8_t	flags:3;
+	u_int8_t	I_flag:1;
+	u_int8_t	V_flag:1;
+	u_int8_t	E_flag:1;
+	u_int8_t	L_flag:1;
+	u_int8_t	N_flag:1;
+#else 
+	u_int8_t	N_flag:1;
+	u_int8_t	L_flag:1;
+	u_int8_t	E_flag:1;
+	u_int8_t	V_flag:1;
+	u_int8_t	I_flag:1;
+	u_int8_t	flags:3;
+#endif
 	union {
 		u_int8_t	lisp_hdr_un1_data8[3];
 		u_int16_t	lisp_hdr_un1_data12_1:12;
@@ -159,6 +173,7 @@ struct lisp_map_request_record {
 
 /*
   LISP Map Reply Message
+  Reply is encapsulated by LISPCONTROL-IP-UDP
 
       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
       |Type=2 |P|E|S|          Reserved               | Record Count  |

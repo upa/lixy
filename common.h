@@ -8,11 +8,13 @@
 #include <utlist.h>
 
 #include "lisp.h"
+#include "maptable.h"
 #include "list/list.h"
 #include "patricia/patricia.h"
 
 
 #define LISP_MAP_REGIST_INTERVAL	10
+#define LISP_EID_NAME_LEN		16
 
 
 struct locator {
@@ -21,22 +23,28 @@ struct locator {
 };
 
 struct eid {			/* EID Instance */
+	int t_flag;		/* -1 is thread is not working, 1 is working */
 	pthread_t tid;		/* Pthread ID of this EID instance*/
 	int raw_socket;		/* Raw socket for own interface */
 
-	char iface[IFNAMSIZ];
+	char name[LISP_EID_NAME_LEN];
+	char ifname[IFNAMSIZ];
 	char authkey[LISP_MAX_KEYLEN];
-	prefix_t prefix;
-	struct locator locator;
+	list_t * prefix_tuple;
 };
 
 
 struct lisp {
 	int udp_socket;	/* socket for sending encapsulated LISP packet		*/
+	int raw_socket; /* socket for sending non encapsulated (native forward)	*/
 	
 	list_t * eid_tuple;			/* Local EID List		*/
 	struct locator loc;			/* Local Locator Address 	*/
+	struct locator loc6;			/* Local Locator Address 	*/
 	struct sockaddr_storage mapsrvaddr;	/* Map Server Address		*/
+	
+	struct maptable * rib;			/* For process caches		*/
+	struct maptable * fib;			/* For lookup to forward packet */
 };
 
 extern struct lisp lisp;

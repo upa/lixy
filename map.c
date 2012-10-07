@@ -119,13 +119,13 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 	case AF_INET6 :
 		ip6 = (struct ip6_hdr *) (buf + pktlen);
 		set_ip6_hdr (ip6, 0, 
-			     EXTRACT_IN6ADDR (lisp.loc), 
+			     EXTRACT_IN6ADDR (lisp.loc6), 
 			     prefix->add.sin6);
 		/* ip6 len is set later */
 		pktlen += sizeof (struct ip6_hdr);
 		break;
 	default :
-		error_warn ("Invalid AI Family in mapserver address");
+		error_warn ("Invalid AI Family in destination eid prefix");
 		return -1;
 	}
 	
@@ -151,7 +151,7 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 	
 	/* set ITR LOC Info */
 	ptr = buf + pktlen;
-	switch (EXTRACT_FAMILY (lisp.loc.loc_addr)) {
+	switch (prefix->family) {
 	case AF_INET : 
 		tmpafi = htons (LISP_AFI_IPV4);
 		memcpy (ptr, &tmpafi, sizeof (tmpafi));
@@ -165,7 +165,7 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 		tmpafi = htons (LISP_AFI_IPV6);
 		memcpy (ptr, &tmpafi, sizeof (tmpafi));
 		pktlen += sizeof (tmpafi);
-		memcpy (buf + pktlen, &(EXTRACT_IN6ADDR(lisp.loc.loc_addr)),
+		memcpy (buf + pktlen, &(EXTRACT_IN6ADDR(lisp.loc6.loc_addr)),
 			sizeof (struct in6_addr));
 		pktlen += sizeof (struct in6_addr);
 		break;
@@ -196,7 +196,7 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 	}
 
 	/* set ip len, udp len, and check sum */
-	switch (EXTRACT_FAMILY (lisp.mapsrvaddr)) {
+	switch (EXTRACT_FAMILY (prefix->family) {
 	case AF_INET :
 		ip->ip_len = htons (pktlen - sizeof (struct lisp_control));
 		udp->uh_ulen = htons (pktlen 
@@ -302,6 +302,7 @@ set_lisp_map_register (char * buf, int len, struct eid * eid)
 int 
 process_lisp_map_reply (struct lisp_map_reply * maprep)
 {
+	
 	return 0;
 }
 
