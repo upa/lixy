@@ -36,11 +36,11 @@ struct eid {			/* EID Instance */
 
 struct lisp {
 	int udp_socket;	/* socket for sending encapsulated LISP packet		*/
+	int ctl_socket; /* socket for sending control LISP Packet		*/
 	int raw_socket; /* socket for sending non encapsulated (native forward)	*/
 	
 	list_t * eid_tuple;			/* Local EID List		*/
-	struct locator loc;			/* Local Locator Address 	*/
-	struct locator loc6;			/* Local Locator Address 	*/
+	list_t * loc_tuple;			/* locator address list 	*/
 	struct sockaddr_storage mapsrvaddr;	/* Map Server Address		*/
 	
 	struct maptable * rib;			/* For process caches		*/

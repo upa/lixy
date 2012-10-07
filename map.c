@@ -18,6 +18,25 @@
 
 void hmac(char *md, void *buf, size_t size, char * key, int keylen);
 
+struct locator *
+get_locator (int af) 
+{
+	listnode_t * ln;
+	struct locator * loc;
+
+	if (MYLIST_COUNT (lisp.loc_tuple) == 0) {
+		return NULL;
+	}
+
+	MYLIST_FOREACH (lisp.loc_tuple, ln) {
+		loc = (struct locator *) (ln->data);
+
+		if (af == EXTRACT_FAMILY (loc->loc_addr) || af == 0)
+			return loc;
+	}
+
+	return NULL;
+}
 
 void
 set_ip_hdr (struct ip * ip, int data_len, struct in_addr src, struct in_addr dst)
@@ -91,6 +110,8 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 	int pktlen = 0;
 	char * ptr;
 	u_int16_t tmpafi;
+	listnode_t * li;
+	struct locator * loc;
 	struct ip * ip;
 	struct ip6_hdr * ip6;
 	struct udphdr * udp;
@@ -106,11 +127,16 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 
 
 	/* set IP header */
+	loc = get_locator (prefix->family);
+	if (loc == NULL) {
+		error_warn ("locator is not set");
+		return -1;
+	}
 	switch (prefix->family) {
 	case AF_INET :
 		ip = (struct ip *) (buf + pktlen);
 		set_ip_hdr (ip, 0, 
-			    EXTRACT_INADDR (lisp.loc), 
+			    EXTRACT_INADDR (*loc), 
 			    prefix->add.sin);
 		/* ip len is set later */
 		pktlen += sizeof (struct ip);
@@ -119,7 +145,7 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 	case AF_INET6 :
 		ip6 = (struct ip6_hdr *) (buf + pktlen);
 		set_ip6_hdr (ip6, 0, 
-			     EXTRACT_IN6ADDR (lisp.loc6), 
+			     EXTRACT_IN6ADDR (*loc), 
 			     prefix->add.sin6);
 		/* ip6 len is set later */
 		pktlen += sizeof (struct ip6_hdr);
@@ -140,7 +166,7 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 	memset (req, 0, sizeof (struct lisp_map_request));
 	req->type = LISP_MAP_RQST;
 	req->record_count = 1;
-	req->irc = 0;			/* 0 means 1 ITR */
+	req->irc = MYLIST_COUNT (lisp.loc_tuple) - 1;	/* 0 means 1 ITR */
 	pktlen += sizeof (struct lisp_map_request);
 	
 	/* set Source EID */
@@ -151,39 +177,42 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 	
 	/* set ITR LOC Info */
 	ptr = buf + pktlen;
-	switch (prefix->family) {
-	case AF_INET : 
-		tmpafi = htons (LISP_AFI_IPV4);
-		memcpy (ptr, &tmpafi, sizeof (tmpafi));
-		pktlen += sizeof (tmpafi);
-		memcpy (buf + pktlen, &(EXTRACT_INADDR(lisp.loc.loc_addr)),
-			sizeof (struct in_addr));
-		pktlen += sizeof (struct in_addr);
-		break;
 
-	case AF_INET6 :
-		tmpafi = htons (LISP_AFI_IPV6);
-		memcpy (ptr, &tmpafi, sizeof (tmpafi));
-		pktlen += sizeof (tmpafi);
-		memcpy (buf + pktlen, &(EXTRACT_IN6ADDR(lisp.loc6.loc_addr)),
-			sizeof (struct in6_addr));
-		pktlen += sizeof (struct in6_addr);
-		break;
-	default :
-		error_warn ("Locator is not set");
-		return -1;
+	MYLIST_FOREACH (lisp.loc_tuple, li) {
+		loc = (struct locator *) li->data;
+		switch (EXTRACT_FAMILY (loc->loc_addr)) {
+		case AF_INET : 
+			tmpafi = htons (LISP_AFI_IPV4);
+			memcpy (ptr, &tmpafi, sizeof (tmpafi));
+			pktlen += sizeof (tmpafi);
+			memcpy (buf + pktlen, &(EXTRACT_INADDR(loc->loc_addr)),
+				sizeof (struct in_addr));
+			pktlen += sizeof (struct in_addr);
+			break;
+
+		case AF_INET6 :
+			tmpafi = htons (LISP_AFI_IPV6);
+			memcpy (ptr, &tmpafi, sizeof (tmpafi));
+			pktlen += sizeof (tmpafi);
+			memcpy (buf + pktlen, &(EXTRACT_IN6ADDR(loc->loc_addr)),
+				sizeof (struct in6_addr));
+			pktlen += sizeof (struct in6_addr);
+			break;
+		default :
+			error_warn ("Locator is not set");
+			return -1;
+		}
 	}
 
-	/* Set Request Prefix */
+	/* set Request Prefix Record */
 	reqrec = (struct lisp_map_request_record *)(buf + pktlen);
 	memset (reqrec, 0, sizeof (struct lisp_map_request_record));
 	reqrec->eid_mask_len = prefix->bitlen;
 	reqrec->eid_prefix_afi = htons (AF_TO_LISPAFI (prefix->family));
 	pktlen += sizeof (struct lisp_map_request_record);
 
-	/* Request EID AFI and Prefix*/
+	/* set Request Prefix*/
 	ptr = buf + pktlen;
-
 	switch (prefix->family) {
 	case AF_INET :
 		memcpy (ptr, &(prefix->add.sin), sizeof (struct in_addr));
@@ -196,7 +225,7 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 	}
 
 	/* set ip len, udp len, and check sum */
-	switch (EXTRACT_FAMILY (prefix->family) {
+	switch (EXTRACT_FAMILY (prefix->family)) {
 	case AF_INET :
 		ip->ip_len = htons (pktlen - sizeof (struct lisp_control));
 		udp->uh_ulen = htons (pktlen 
@@ -221,13 +250,16 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 
 
 int 
-set_lisp_map_register (char * buf, int len, struct eid * eid)
+set_lisp_map_register (char * buf, int len, prefix_t * prefix, struct eid * eid)
 {
 	int pktlen = 0;
 	char * ptr;
+	listnode_t * li;
+	struct locator * tmploc;
 	struct lisp_record  * rec;
 	struct lisp_locator * loc;
 	struct lisp_map_register * reg;
+
 
 	/* Set Register header */
 	pktlen += sizeof (struct lisp_map_register);
@@ -244,52 +276,53 @@ set_lisp_map_register (char * buf, int len, struct eid * eid)
 	rec = (struct lisp_record *) (buf + sizeof (struct lisp_map_register));
 	memset (rec, 0, sizeof (struct lisp_record));
 	rec->record_ttl = htonl (LISP_DEFAULT_RECORD_TTL);
-	rec->locator_count = 1;
-	rec->eid_mask_len = eid->prefix.bitlen;
-	rec->eid_prefix_afi = htons (AF_TO_LISPAFI (eid->prefix.family));
+	rec->locator_count = MYLIST_COUNT (lisp.loc_tuple);
+	rec->eid_mask_len = prefix->bitlen;
+	rec->eid_prefix_afi = htons (AF_TO_LISPAFI (prefix->family));
 	
 	ptr = (char *) (rec + 1);
-	switch (eid->prefix.family) {
+	switch (prefix->family) {
 	case AF_INET :
 		pktlen += sizeof (struct in_addr);
-		memcpy (ptr, &(eid->prefix.add.sin), sizeof (struct in_addr));
+		memcpy (ptr, &(prefix->add.sin), sizeof (struct in_addr));
 		break;
 	case AF_INET6 :
 		pktlen += sizeof (struct in6_addr);
-		memcpy (ptr, &(eid->prefix.add.sin6), sizeof (struct in6_addr));
+		memcpy (ptr, &(prefix->add.sin6), sizeof (struct in6_addr));
 		break;
 	}
 
 	/* Set Locator */
-	pktlen += sizeof (struct lisp_locator);
-	loc = (struct lisp_locator *) (buf + sizeof (struct lisp_map_register) + 
-				       sizeof (struct lisp_record) +
-				       ((eid->prefix.family == AF_INET) ? 
-					sizeof (struct in_addr) : 
-					sizeof (struct in6_addr)));
-	memset (loc, 0, sizeof (struct lisp_locator));
-	loc->priority = eid->locator.priority;
-	loc->weight = eid->locator.weight;
-	loc->m_priority = eid->locator.m_priority;
-	loc->m_weight = eid->locator.m_weight;
-	loc->R_flag = 1;
-	loc->L_flag = 1;
-	loc->afi = htons (EXTRACT_LISPAFI (eid->locator.loc_addr));
-	
-	ptr = (char *) (loc + 1);
-	switch (EXTRACT_FAMILY (eid->locator.loc_addr)) {
-	case AF_INET :
-		pktlen += sizeof (struct in_addr);
-		memcpy (ptr, &(EXTRACT_INADDR (eid->locator.loc_addr)), 
-			sizeof (struct in_addr));
-		break;
-	case AF_INET6 :
-		pktlen += sizeof (struct in6_addr);
-		memcpy (ptr, &(EXTRACT_IN6ADDR (eid->locator.loc_addr)), 
-			sizeof (struct in6_addr));
-		break;
-	}
 
+	MYLIST_FOREACH (lisp.loc_tuple, li) {
+		tmploc = (struct locator *) (li->data);
+
+		pktlen += sizeof (struct lisp_locator);
+		loc = (struct lisp_locator *) (buf + pktlen);
+		memset (loc, 0, sizeof (struct lisp_locator));
+		loc->priority = tmploc->priority;
+		loc->weight = tmploc->weight;
+		loc->m_priority = tmploc->m_priority;
+		loc->m_weight = tmploc->m_weight;
+		loc->R_flag = 1;
+		loc->L_flag = 1;
+		loc->afi = htons (EXTRACT_LISPAFI (tmploc->loc_addr));
+	
+		ptr = (char *) (loc + 1);
+		switch (EXTRACT_FAMILY (tmploc->loc_addr)) {
+		case AF_INET :
+			pktlen += sizeof (struct in_addr);
+			memcpy (ptr, &(EXTRACT_INADDR (tmploc->loc_addr)), 
+				sizeof (struct in_addr));
+			break;
+		case AF_INET6 :
+			pktlen += sizeof (struct in6_addr);
+			memcpy (ptr, &(EXTRACT_IN6ADDR (tmploc->loc_addr)), 
+				sizeof (struct in6_addr));
+			break;
+		}
+	}
+			  
 	/* Calculate Auth Data */
 	hmac (reg->auth_data, buf, pktlen, eid->authkey, strlen (eid->authkey));
 	
@@ -308,7 +341,7 @@ process_lisp_map_reply (struct lisp_map_reply * maprep)
 
 
 void
-hmac(char *md, void *buf, size_t size, char * key, int keylen)
+hmac (char *md, void *buf, size_t size, char * key, int keylen)
 {
 	size_t reslen = keylen;
 
@@ -316,5 +349,52 @@ hmac(char *md, void *buf, size_t size, char * key, int keylen)
 
 	HMAC(EVP_sha1(), key, keylen, buf, size, result, (unsigned int *)&reslen);
 	memcpy(md, result, SHA_DIGEST_LENGTH);
+}
+
+
+int
+send_map_request (prefix_t * prefix)
+{
+	int len;
+	char buf[LISP_MSG_BUF_LEN];
+	
+	if (lisp.mapsrvaddr.ss_len == 0) {
+		error_warn ("map server is node defined");
+		return -1;
+	}
+
+	len = set_lisp_map_request (buf, sizeof (buf), prefix);
+	if (len < 1) {
+		return -1;
+	}
+
+	if (sendto (lisp.ctl_socket, buf, len, 0, 
+		    (struct sockaddr *)&(lisp.mapsrvaddr), lisp.mapsrvaddr.ss_len) < 0)
+		error_warn ("send map request failed");
+
+	return 0;
+}
+
+int
+send_map_reqgister (struct eid * eid)
+{
+	int len;
+	char buf[LISP_MSG_BUF_LEN];
+	listnode_t * li;
+	prefix_t * prefix;
+
+	MYLIST_FOREACH (eid->prefix_tuple, li) {
+		prefix = (prefix_t *) (li->data);
+		len = set_lisp_map_register (buf, sizeof (buf), prefix, eid);
+		if (len < 0) {
+			return -1;
+		}
+		if (sendto (lisp.ctl_socket, buf, len, 0,
+			    (struct sockaddr *)&(lisp.mapsrvaddr),
+			    lisp.mapsrvaddr.ss_len) < 0)
+			error_warn ("send map register failed");
+	}
+
+	return 0;
 }
 
