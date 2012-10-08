@@ -8,7 +8,6 @@
 #include <utlist.h>
 
 #include "lisp.h"
-#include "maptable.h"
 #include "list/list.h"
 #include "patricia/patricia.h"
 
@@ -33,6 +32,8 @@ struct eid {			/* EID Instance */
 	list_t * prefix_tuple;
 };
 
+
+#include "maptable.h"
 
 struct lisp {
 	int udp_socket;	/* socket for sending encapsulated LISP packet		*/

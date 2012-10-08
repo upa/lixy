@@ -11,7 +11,7 @@ int set_lisp_map_request (char * buf, int len, prefix_t * prefix);
 /* Always Record count is 1, Locator count is 1 */
 int set_lisp_map_register (char * buf, int len, prefix_t * prefix, struct eid * eid);
 
-int process_lisp_map_reply (struct lisp_map_reply * maprep);
+int process_lisp_map_reply (char * pkt);	/* pkt is pointer to lisp_map_reply */
 
 
 int send_map_request (prefix_t * prefix);

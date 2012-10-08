@@ -3,7 +3,7 @@
 
 #include <sys/types.h>
 
-#include "lisp.h"
+#include "common.h"
 #include "patricia/patricia.h"
 
 struct maptable {
@@ -15,10 +15,14 @@ struct mapnode {
 	u_int8_t state;
 	u_int8_t timer;
 	struct sockaddr_storage addr;
+	struct locator locator;
 };
+
+#define MAPTIMER_DEFAULT	60	/* 1min */
 #define MAPSTATE_ACTIVE		0
 #define MAPSTATE_NEGATIVE	1
-#define MAPSTATE_QUERIED	2
+#define MAPSTATE_DROP		2
+#define MAPSTATE_QUERIED	3
 
 
 /* Prototypes */

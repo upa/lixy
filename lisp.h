@@ -217,6 +217,11 @@ struct lisp_map_reply {
 	u_int32_t	nonce[2];
 };
 
+/* ACT Field value in record (it is used only when loc count is 0)*/
+#define LISP_MAPREPLY_ACT_NOACTION	0
+#define LISP_MAPREPLY_ACT_NATIVE	1
+#define LISP_MAPREPLY_ACT_SENDREQ	2
+#define LISP_MAPREPLY_ACT_DROP		3
 
 
 /*

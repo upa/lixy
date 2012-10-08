@@ -313,3 +313,84 @@ eid_forwarding_thread (void * param)
 	return NULL;
 }
 
+
+
+/* Mail LISP Thread Instance */
+
+int
+set_lisp_mapserver (struct sockaddr_storage mapsrv)
+{
+	if (EXTRACT_FAMILY (mapsrv) != AF_INET &&
+	    EXTRACT_FAMILY (mapsrv) != AF_INET6) {
+		error_warn ("%s: invalid map server address", __func__);
+		return -1;
+	}
+	
+	lisp.mapsrvaddr = mapsrv;
+
+	return 0;
+}
+
+int
+set_lisp_unmapserver (void)
+{
+	memset (&(lisp.mapsrvaddr), 0, sizeof (lisp.mapsrvaddr));
+
+	return 0;
+}
+
+int
+set_lisp_locator (struct locator * loc)
+{
+	append_listnode (lisp.loc_tuple, loc);
+
+	return 0;
+}
+
+int
+unset_lisp_locator (struct sockaddr_storage loc_addr)
+{
+	listnode_t * li;
+	struct locator * loc;
+
+	MYLIST_FOREACH (lisp.loc_tuple, li) {
+		loc = (struct locator *) (li->data);
+		if (COMPARE_SOCKADDR (&(loc->loc_addr), &(loc_addr))) {
+			delete_listnode (lisp.loc_tuple, loc);
+			return 1;
+		}
+	}
+
+	return -1;
+}
+
+
+void
+start_lisp_thread (pthread_t * tid, void * (* thread) (void * param))
+{
+	pthread_attr_t attr;
+
+	pthread_attr_init (&attr);
+	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
+	pthread_create (tid, &attr, thread, NULL);
+
+	return;
+}
+
+void * 
+lisp_map_register_thread (void * param)
+{
+	return NULL;
+}
+
+void * 
+lisp_map_reply_thread (void * param)
+{
+	return NULL;
+}
+
+void * 
+lisp_dp_thread (void * param)
+{
+	return NULL;
+}

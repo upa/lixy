@@ -16,6 +16,20 @@
 #define AF_TO_LISPAFI(af) \
 	((af == AF_INET) ? LISP_AFI_IPV4 : LISP_AFI_IPV6)
 
+#define LISPAFI_TO_AF(af) \
+	(((af) == LISP_AFI_IPV4) ? AF_INET : AF_INET6)
+
+#define LISP_LOCATOR_PKT_LEN(LOCPKT)				\
+	(sizeof (struct lisp_locator) +				\
+	 (ntohs ((LOCPKT)->afi) == LISP_AFI_IPV4) ?		\
+	 sizeof (struct in_addr) : sizeof (struct in6_addr))	\
+
+#define LISP_RECORD_PKT_LEN(RECPKT)				\
+	(sizeof (struct lisp_record) +				\
+	(ntohs ((RECPKT)->eid_prefix_afi) == LISP_AFI_IPV4) ?	\
+	 sizeof (struct in_addr) : sizeof (struct in6_addr))	\
+
+
 void hmac(char *md, void *buf, size_t size, char * key, int keylen);
 
 struct locator *
@@ -331,10 +345,117 @@ set_lisp_map_register (char * buf, int len, prefix_t * prefix, struct eid * eid)
 
 
 
+void
+process_lisp_map_reply_record_loc_is_zero (struct lisp_record * rec)
+{
+	/* Process Negative Cache */
+
+	char addrbuf[64];
+	prefix_t * prefix;
+	struct mapnode * mn;
+
+	mn = (struct mapnode *) malloc (sizeof (struct mapnode));
+	memset (mn, 0, sizeof (struct mapnode));
+	mn->timer = MAPTIMER_DEFAULT;
+
+	prefix = (prefix_t *) malloc (sizeof (struct mapnode));
+	memset (prefix, 0, sizeof (prefix_t));
+	ADDRTOPREFIX (LISPAFI_TO_AF (htons (rec->eid_prefix_afi)),
+		      rec + 1, rec->eid_mask_len, prefix);
+
+	switch (rec->act) {
+	case LISP_MAPREPLY_ACT_NOACTION :
+		break;
+
+	case LISP_MAPREPLY_ACT_NATIVE :
+		mn->state = MAPSTATE_NEGATIVE;
+		update_mapnode (lisp.rib, prefix, mn);
+		update_mapnode (lisp.fib, prefix, mn);
+		break;
+
+	case LISP_MAPREPLY_ACT_SENDREQ :
+		send_map_request (prefix);
+		free (prefix);
+		break;
+
+	case LISP_MAPREPLY_ACT_DROP :
+		mn->state = MAPSTATE_DROP;
+		update_mapnode (lisp.rib, prefix, mn);
+		update_mapnode (lisp.fib, prefix, mn);
+		break;
+
+	default :
+		error_warn ("unknown MAP Replay Action %d for %s", rec->act, 
+			    inet_pton (LISPAFI_TO_AF (ntohs (rec->eid_prefix_afi)),
+				       (char *)(rec + 1), addrbuf));
+	}
+
+	return;
+}
+
+struct locator 
+lisp_locator_pkt_to_locator (struct lisp_locator * lisploc)
+{
+	struct locator loc;
+
+	memset (&loc, 0, sizeof (loc));
+	FILL_SOCKADDR (LISPAFI_TO_AF (ntohs (lisploc->afi)), 
+		       &(loc.loc_addr), *(lisploc + 1));
+	EXTRACT_PORT (loc.loc_addr) = htons (LISP_DATA_PORT);
+	loc.priority = lisploc->priority;
+	loc.weight = lisploc->weight;
+	loc.m_priority = lisploc->m_priority;
+	loc.m_weight = lisploc->m_weight;
+
+	return loc;
+}
 
 int 
-process_lisp_map_reply (struct lisp_map_reply * maprep)
+process_lisp_map_reply (char * pkt)
 {
+	/* Probe, Echo-nonce, Security bit is not supported yet */
+	
+	int n, i, pktlen;
+	prefix_t * prefix;
+	struct mapnode * mn;
+	struct lisp_map_reply * rep;
+	struct lisp_record * rec;
+	struct lisp_locator * lisploc, * tmplisploc;
+
+
+	/* Process Records */
+	pktlen = sizeof (struct lisp_map_reply);
+	for (n = 0; n < rep->record_count; n++) {
+		rec = (struct lisp_record *) (pkt + pktlen);
+		pktlen += LISP_RECORD_PKT_LEN (rec);
+		if (rec->locator_count == 0) {
+			/* Negative Cache */ 
+			process_lisp_map_reply_record_loc_is_zero (rec);
+			continue;
+		}
+		
+		/* Select Locator and */
+		lisploc = tmplisploc = (struct lisp_locator *)(pkt + pktlen);
+		for (i = 0; i < rec->locator_count; i++) {
+			if (lisploc->priority < tmplisploc->priority)
+				lisploc = tmplisploc;
+			pktlen += LISP_LOCATOR_PKT_LEN (tmplisploc);
+			tmplisploc = (struct lisp_locator *)(pkt + pktlen);
+		}
+
+		/* register lcoator to maptable */
+		memset (prefix, 0, sizeof (prefix_t));
+		ADDRTOPREFIX (LISPAFI_TO_AF (ntohs (rec->eid_prefix_afi)),
+			     rec + 1, rec->eid_mask_len, prefix);
+		mn = (struct mapnode *) malloc (sizeof (struct mapnode));
+		memset (mn, 0, sizeof (mn));
+		mn->state = MAPSTATE_ACTIVE;
+		mn->timer = MAPTIMER_DEFAULT;
+		mn->locator = lisp_locator_pkt_to_locator (lisploc);
+		mn->addr = mn->locator.loc_addr;
+		update_mapnode (lisp.rib, prefix, mn);
+		update_mapnode (lisp.fib, prefix, mn);
+	}
 	
 	return 0;
 }
