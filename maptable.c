@@ -69,3 +69,15 @@ search_mapnode (struct maptable * table, prefix_t * prefix)
 
 	return pn->data;
 }
+
+inline void
+install_mapnode_queried (struct maptable * table, prefix_t * prefix)
+{
+	struct mapnode * mn;
+
+	mn = (struct mapnode *) malloc (sizeof (struct mapnode));
+	mn->state = MAPSTATE_QUERIED;
+
+	udpate_mapnode (table, prefix, mn);
+	return;
+}

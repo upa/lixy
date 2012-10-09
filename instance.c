@@ -2,10 +2,15 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <net/ethernet.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
 
+#include "map.h"
+#include "maptable.h"
 #include "instance.h"
-#include "error.h"
 #include "sockaddrmacro.h"
+
+#include "error.h"
 
 int start_eid_forwarding_thread (struct eid * eid);
 void * eid_forwarding_thread (void * param);
@@ -288,10 +293,13 @@ eid_forwarding_thread (void * param)
 
 		if (mn == NULL) {
 			/* Send Map Request */
+			install_mapnode_queried (lisp.rib, &dst_prefix);
+			install_mapnode_queried (lisp.fib, &dst_prefix);
+			send_map_request (&dst_prefix);
 			continue;
 		} 
 
-		if (mn->state == MAPSTATE_NEGATIVE) {
+		if (mn->state == MAPSTATE_NEGATIVE || mn->state == MAPSTATE_QUERIED) {
 			/* native forwarding */
 			switch (ntohs (ehdr->ether_type)) {
 			case AF_INET : 
@@ -307,7 +315,7 @@ eid_forwarding_thread (void * param)
 			mhdr.msg_namelen = mn->addr.ss_len;
 			sendmsg (lisp.udp_socket, &mhdr, 0);
 		}
-
+		/* MAPSTATE_DROP is processed */
 	}
 
 	return NULL;
@@ -332,7 +340,7 @@ set_lisp_mapserver (struct sockaddr_storage mapsrv)
 }
 
 int
-set_lisp_unmapserver (void)
+unset_lisp_mapserver (void)
 {
 	memset (&(lisp.mapsrvaddr), 0, sizeof (lisp.mapsrvaddr));
 
@@ -365,6 +373,7 @@ unset_lisp_locator (struct sockaddr_storage loc_addr)
 }
 
 
+
 void
 start_lisp_thread (pthread_t * tid, void * (* thread) (void * param))
 {
@@ -380,17 +389,88 @@ start_lisp_thread (pthread_t * tid, void * (* thread) (void * param))
 void * 
 lisp_map_register_thread (void * param)
 {
+	listnode_t * ln;
+	struct eid * eid;
+
+	while (1) {
+		MYLIST_FOREACH (lisp.eid_tuple, ln) {
+			/* if Map server is not set, do not process */
+			if (EXTRACT_FAMILY (lisp.mapsrvaddr) == 0) 
+				continue;
+
+			eid = (struct eid *) (ln->data);
+			send_map_register (eid);
+		}
+		sleep (LISP_MAP_REGISTER_INTERVAL);
+	}
+
 	return NULL;
 }
 
 void * 
 lisp_map_reply_thread (void * param)
 {
+	int len;
+	char buf[LISP_MSG_BUF_LEN];
+	struct lisp_control * ctl_pkt;
+	struct lisp_map_reply * rep;
+	struct ip * ip;
+
+	while (1) {
+		len = recv (lisp.ctl_socket, buf, sizeof (buf), 0);
+		if (len < 0) {
+			error_warn ("%s: recv failed", __func__);
+			continue;
+		}
+
+		ctl_pkt = (struct lisp_control *) buf;
+
+		switch (ctl_pkt->type) {
+		case LISP_MAP_RPLY :
+			rep = (struct lisp_map_reply *)(ctl_pkt + 1);
+			break;
+
+		case LISP_ECAP_CTL :
+			ip = (struct ip *) (buf + sizeof (struct lisp_control));
+			switch (ip->ip_v) {
+			case 4 :
+				rep = (struct lisp_map_reply *) 
+					(buf 
+					 + sizeof (struct lisp_control) 
+					 + sizeof (struct ip) 
+					 + sizeof (struct udphdr));
+				break;
+
+			case 6 :
+				rep = (struct lisp_map_reply *) 
+					(buf 
+					 + sizeof (struct lisp_control) 
+					 + sizeof (struct ip6_hdr) 
+					 + sizeof (struct udphdr));
+				break;
+			default : 
+				error_warn ("%s: Invalid inner IP version in"
+					    "Encapsulated Control Message %d",
+					    ip->ip_v);
+				continue;
+				break;
+			}
+			break;
+		default :
+			error_warn ("%s: Invalid LSIP Message Type %d", ctl_pkt->type);
+			continue;
+			break;
+		}
+		
+		process_lisp_map_reply ((char *)rep);
+	}
+
 	return NULL;
 }
 
 void * 
 lisp_dp_thread (void * param)
 {
+	
 	return NULL;
 }

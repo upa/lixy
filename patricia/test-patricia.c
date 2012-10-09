@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -45,7 +46,13 @@ main (int argc, char * argv[])
 	patricia_process (v4table, process_func);
 
 
+	printf ("Free ALL!!\n");
+	free (p1);
+	free (p2);
+	free (p3);
+
 	printf ("\nlookup!\n");
+
 
 	prefix_t *pp;
 	patricia_node_t * pn;

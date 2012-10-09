@@ -12,7 +12,7 @@
 #include "patricia/patricia.h"
 
 
-#define LISP_MAP_REGIST_INTERVAL	10
+#define LISP_MAP_REGISTER_INTERVAL	10
 #define LISP_EID_NAME_LEN		16
 
 

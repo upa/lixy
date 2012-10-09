@@ -351,17 +351,15 @@ process_lisp_map_reply_record_loc_is_zero (struct lisp_record * rec)
 	/* Process Negative Cache */
 
 	char addrbuf[64];
-	prefix_t * prefix;
+	prefix_t prefix;
 	struct mapnode * mn;
 
 	mn = (struct mapnode *) malloc (sizeof (struct mapnode));
 	memset (mn, 0, sizeof (struct mapnode));
 	mn->timer = MAPTIMER_DEFAULT;
 
-	prefix = (prefix_t *) malloc (sizeof (struct mapnode));
-	memset (prefix, 0, sizeof (prefix_t));
 	ADDRTOPREFIX (LISPAFI_TO_AF (htons (rec->eid_prefix_afi)),
-		      rec + 1, rec->eid_mask_len, prefix);
+		      rec + 1, rec->eid_mask_len, &prefix);
 
 	switch (rec->act) {
 	case LISP_MAPREPLY_ACT_NOACTION :
@@ -369,19 +367,18 @@ process_lisp_map_reply_record_loc_is_zero (struct lisp_record * rec)
 
 	case LISP_MAPREPLY_ACT_NATIVE :
 		mn->state = MAPSTATE_NEGATIVE;
-		update_mapnode (lisp.rib, prefix, mn);
-		update_mapnode (lisp.fib, prefix, mn);
+		update_mapnode (lisp.rib, &prefix, mn);
+		update_mapnode (lisp.fib, &prefix, mn);
 		break;
 
 	case LISP_MAPREPLY_ACT_SENDREQ :
-		send_map_request (prefix);
-		free (prefix);
+		send_map_request (&prefix);
 		break;
 
 	case LISP_MAPREPLY_ACT_DROP :
 		mn->state = MAPSTATE_DROP;
-		update_mapnode (lisp.rib, prefix, mn);
-		update_mapnode (lisp.fib, prefix, mn);
+		update_mapnode (lisp.rib, &prefix, mn);
+		update_mapnode (lisp.fib, &prefix, mn);
 		break;
 
 	default :
@@ -416,12 +413,11 @@ process_lisp_map_reply (char * pkt)
 	/* Probe, Echo-nonce, Security bit is not supported yet */
 	
 	int n, i, pktlen;
-	prefix_t * prefix;
+	prefix_t prefix;
 	struct mapnode * mn;
 	struct lisp_map_reply * rep;
 	struct lisp_record * rec;
 	struct lisp_locator * lisploc, * tmplisploc;
-
 
 	/* Process Records */
 	pktlen = sizeof (struct lisp_map_reply);
@@ -444,17 +440,16 @@ process_lisp_map_reply (char * pkt)
 		}
 
 		/* register lcoator to maptable */
-		memset (prefix, 0, sizeof (prefix_t));
 		ADDRTOPREFIX (LISPAFI_TO_AF (ntohs (rec->eid_prefix_afi)),
-			     rec + 1, rec->eid_mask_len, prefix);
+			     rec + 1, rec->eid_mask_len, &prefix);
 		mn = (struct mapnode *) malloc (sizeof (struct mapnode));
 		memset (mn, 0, sizeof (mn));
 		mn->state = MAPSTATE_ACTIVE;
 		mn->timer = MAPTIMER_DEFAULT;
 		mn->locator = lisp_locator_pkt_to_locator (lisploc);
 		mn->addr = mn->locator.loc_addr;
-		update_mapnode (lisp.rib, prefix, mn);
-		update_mapnode (lisp.fib, prefix, mn);
+		update_mapnode (lisp.rib, &prefix, mn);
+		update_mapnode (lisp.fib, &prefix, mn);
 	}
 	
 	return 0;

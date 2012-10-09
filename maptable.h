@@ -36,6 +36,7 @@ struct mapnode * update_mapnode (struct maptable * table, prefix_t * prefix,
 struct mapnode * delete_mapnode (struct maptable * table, prefix_t * prefix);
 struct mapnode * search_mapnode (struct maptable * table, prefix_t * prefix);
 
+inline void install_mapnode_queried (struct maptable * table, prefix_t * prefix);
 
 
 /* Macros */
