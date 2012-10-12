@@ -21,10 +21,10 @@ struct locator {
 	u_int8_t priority, weight, m_priority, m_weight;
 };
 
-struct eid {			/* EID Instance */
-	int t_flag;		/* -1 is thread is not working, 1 is working */
-	pthread_t tid;		/* Pthread ID of this EID instance*/
-	int raw_socket;		/* Raw socket for own interface */
+struct eid {			/* EID Instance 				*/
+	int t_flag;		/* -1 is thread is not working, 1 is working 	*/
+	pthread_t tid;		/* Pthread ID of this EID instance			*/
+	int raw_socket;		/* Raw socket for recieving packet from own interface 	*/
 
 	char name[LISP_EID_NAME_LEN];
 	char ifname[IFNAMSIZ];
@@ -46,6 +46,10 @@ struct lisp {
 	
 	struct maptable * rib;			/* For process caches		*/
 	struct maptable * fib;			/* For lookup to forward packet */
+
+	pthread_t process_map_register_t;
+	pthread_t process_map_reply_t;
+	pthread_t lisp_dp_t;
 };
 
 extern struct lisp lisp;

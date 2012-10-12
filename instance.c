@@ -471,6 +471,40 @@ lisp_map_reply_thread (void * param)
 void * 
 lisp_dp_thread (void * param)
 {
+	/* 
+	 * reciev encapsulated LISP DP Packet
+	 * and decapsulate it, and send to IP_HDRINCL raw socket
+	 */
 	
+	int len;
+	char buf[LISP_EID_DP_BUF_LEN];
+	struct lisp_hdr * hdr;
+	struct ip * ip;
+
+	hdr = (struct lisp_hdr *) buf;
+	ip = (struct ip *) (hdr + 1);
+	
+	while (1) {
+		len = recv (lisp.udp_socket, buf, sizeof (buf), 0);
+		if (len < 0) {
+			error_warn ("%s: recv failed", __func__);
+			continue;
+		}
+
+		/* processing all of flags is not supported tehepero */
+
+		switch (ip->ip_v) {
+		case 4 :
+			sendraw4 (lisp.raw_socket, ip);
+			break;
+		case 6 :
+			sendraw6 (lisp.raw_socket, ip);
+			break;
+		default :
+			error_warn ("%s: invalid ip version %d", __func__, ip->ip_v);
+			break;
+		}
+	}
+
 	return NULL;
 }
