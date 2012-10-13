@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "error.h"
+#include "instance.h"
 
 int 
 create_udp_socket (int port)
@@ -99,5 +100,25 @@ struct lisp lisp;
 int
 main (int argc, char * argv[])
 {
-	return 0;
+	memset (&lisp, 0, sizeof (lisp));
+
+	lisp.udp_socket = create_lisp_udp_socket ();
+	lisp.ctl_socket = create_lisp_ctl_socket ();
+	lisp.raw_socket = create_lisp_raw_socket ();
+	lisp.cmd_socket = create_lisp_cmd_socket ();
+
+	lisp.eid_tuple = create_list ();
+	lisp.loc_tuple = create_list ();
+
+	lisp.rib = create_maptable ();
+	lisp.fib = create_maptable ();
+	
+	start_lisp_thread (&(lisp.process_map_register_t), lisp_map_register_thread);
+	start_lisp_thread (&(lisp.process_map_reply_t), lisp_map_reply_thread);
+
+	lisp_dp_thread (NULL);
+
+	/* not reached */
+
+	return -1;
 }

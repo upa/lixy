@@ -1,6 +1,6 @@
 # Makefile for LIXY (LISP on Linux for Vyatta)
 
-CC = gcc -Wall
+CC = gcc -Wall -g
 
 MODULES = error.o instance.o map.o maptable.o
 PATRICIA = patricia
@@ -23,8 +23,8 @@ list: $(LIST)/list.h $(LIST)/list.c
 	cd $(LIST)
 	gcc -c list.c list.o
 
-lixy: lixy.c $(MODULES) $(PATRICIA)/patricia.o $(LIST)/list.o
-	$(CC) -lcrypto -lpthread lixy.c $(MODULES) \
+lixy: main.c $(MODULES) $(PATRICIA)/patricia.o $(LIST)/list.o
+	$(CC) main.c -lcrypto -lpthread $(MODULES) \
 	$(PATRICIA)/patricia.o $(LIST)/list.o -o lixy
 
 clean : 

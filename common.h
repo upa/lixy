@@ -57,7 +57,7 @@ extern struct lisp lisp;
 
 #define LISP_UNIX_DOMAIN	"/var/run/lixy"
 #ifndef UNIX_PATH_MAX
-#define UNIX_PATH_MAX 108
+#define UNIX_PATH_MAX 104
 #endif
 
 #endif /* _COMMON_H_ */
