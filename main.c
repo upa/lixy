@@ -49,22 +49,27 @@ create_lisp_ctl_socket (void)
 }
 
 int 
-create_lisp_raw_socket (void)
+create_lisp_raw_socket (int af)
 {
 	int sock;
 	int on = 1;
 
 #ifdef linux
-	if ((sock = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0)
+	if ((sock = socket (af, SOCK_RAW, IPPROTO_RAW)) < 0)
 		err (EXIT_FAILURE, "can not create raw socket for send packet");
 
-	if (setsockopt (sock, IPPROTO_IP, IP_HDRINCL, &on, sizeof (on)) != 0)
-		err (EXIT_FAILURE, "can not set sock opt IPv4 HDRINCL");
-
+	switch (af) {
+	case AF_INET :
+		if (setsockopt (sock, IPPROTO_IP, IP_HDRINCL, &on, sizeof (on)) != 0)
+			err (EXIT_FAILURE, "can not set sock opt IPv4 HDRINCL");
+		break;
 #if 0
-	if (setsockopt (sock, IPPROTO_IPV6, IPV6_HDRINCL, &on, sizeof (on)) != 0)
-		err (EXIT_FAILURE, "can not set sock opt IPv6 HDRINCL");
+	case AF_INET6 :
+		if (setsockopt (sock, IPPROTO_IPV6, IPV6_HDRINCL, &on, sizeof (on)) != 0)
+			err (EXIT_FAILURE, "can not set sock opt IPv6 HDRINCL");
+		break;
 #endif
+	}
 #endif
 
 	return sock;
@@ -107,8 +112,10 @@ main (int argc, char * argv[])
 
 	lisp.udp_socket = create_lisp_udp_socket ();
 	lisp.ctl_socket = create_lisp_ctl_socket ();
-	lisp.raw_socket = create_lisp_raw_socket ();
 	lisp.cmd_socket = create_lisp_cmd_socket ();
+	lisp.raw4_socket = create_lisp_raw_socket (AF_INET);
+	lisp.raw6_socket = create_lisp_raw_socket (AF_INET6);
+
 
 	lisp.eid_tuple = create_list ();
 	lisp.loc_tuple = create_list ();

@@ -422,6 +422,7 @@ process_lisp_map_reply (char * pkt)
 	struct lisp_locator * lisploc, * tmplisploc;
 
 	/* Process Records */
+	rep = (struct lisp_map_reply *) pkt;
 	pktlen = sizeof (struct lisp_map_reply);
 	for (n = 0; n < rep->record_count; n++) {
 		rec = (struct lisp_record *) (pkt + pktlen);

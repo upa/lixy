@@ -307,10 +307,10 @@ eid_forwarding_thread (void * param)
 			/* native forwarding */
 			switch (ntohs (ehdr->ether_type)) {
 			case AF_INET : 
-				sendraw4 (lisp.raw_socket, ip);
+				sendraw4 (lisp.raw4_socket, ip);
 				break;
 			case AF_INET6 :
-				sendraw6 (lisp.raw_socket, ip);
+				sendraw6 (lisp.raw6_socket, ip);
 				break;
 			}
 		} else if (mn->state == MAPSTATE_ACTIVE) {
@@ -499,10 +499,10 @@ lisp_dp_thread (void * param)
 
 		switch (ip->ip_v) {
 		case 4 :
-			sendraw4 (lisp.raw_socket, ip);
+			sendraw4 (lisp.raw4_socket, ip);
 			break;
 		case 6 :
-			sendraw6 (lisp.raw_socket, ip);
+			sendraw6 (lisp.raw6_socket, ip);
 			break;
 		default :
 			error_warn ("%s: invalid ip version %d", __func__, ip->ip_v);

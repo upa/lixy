@@ -36,10 +36,11 @@ struct eid {			/* EID Instance 				*/
 #include "maptable.h"
 
 struct lisp {
-	int udp_socket;	/* socket for sending encapsulated LISP packet		*/
-	int ctl_socket; /* socket for sending control LISP Packet		*/
-	int raw_socket; /* socket for sending non encapsulated (native forward)	*/
-	int cmd_socket;	/* socket for configuration command */
+	int udp_socket;		/* socket for sending encapsulated LISP packet	*/
+	int ctl_socket; 	/* socket for sending control LISP Packet	*/
+	int cmd_socket;		/* socket for configuration command		*/
+	int raw4_socket; 	/* socket for sending to eid prefix		*/
+	int raw6_socket; 	/* socket for sending to eid prefix		*/
 
 	list_t * eid_tuple;			/* Local EID List		*/
 	list_t * loc_tuple;			/* locator address list 	*/
