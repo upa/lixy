@@ -53,7 +53,7 @@ create_raw_socket (char * ifname)
 		return -1;
 	}
 
-	if (sock = socket (AF_PACKET, SOCK_RAW, htons (ETH_P_ALL)) < 0) {
+	if ((sock = socket (AF_PACKET, SOCK_RAW, htons (ETH_P_ALL))) < 0) {
 		error_warn ("can not create raw socket for \"%s\"", ifname);
 		return -1;
 	}

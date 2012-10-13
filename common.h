@@ -39,12 +39,13 @@ struct lisp {
 	int udp_socket;	/* socket for sending encapsulated LISP packet		*/
 	int ctl_socket; /* socket for sending control LISP Packet		*/
 	int raw_socket; /* socket for sending non encapsulated (native forward)	*/
-	
+	int cmd_socket;	/* socket for configuration command */
+
 	list_t * eid_tuple;			/* Local EID List		*/
 	list_t * loc_tuple;			/* locator address list 	*/
 	struct sockaddr_storage mapsrvaddr;	/* Map Server Address		*/
 	
-	struct maptable * rib;			/* For process caches		*/
+	struct maptable * rib;			/* For processing caches	*/
 	struct maptable * fib;			/* For lookup to forward packet */
 
 	pthread_t process_map_register_t;
@@ -54,5 +55,9 @@ struct lisp {
 
 extern struct lisp lisp;
 
+#define LISP_UNIX_DOMAIN	"/var/run/lixy"
+#ifndef UNIX_PATH_MAX
+#define UNIX_PATH_MAX 108
+#endif
 
 #endif /* _COMMON_H_ */
