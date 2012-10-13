@@ -5,6 +5,10 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 
+#ifdef linux
+#include <linux/if_packet.h>
+#endif
+
 #include "map.h"
 #include "maptable.h"
 #include "instance.h"
@@ -312,7 +316,7 @@ eid_forwarding_thread (void * param)
 		} else if (mn->state == MAPSTATE_ACTIVE) {
 			/* LISP Encapsulated forwarding to LISP SITE */
 			mhdr.msg_name = &(mn->addr);
-			mhdr.msg_namelen = mn->addr.ss_len;
+			mhdr.msg_namelen = EXTRACT_SALEN(mn->addr);
 			sendmsg (lisp.udp_socket, &mhdr, 0);
 		}
 		/* MAPSTATE_DROP is processed */

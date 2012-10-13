@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
+
+#define __FAVOR_BSD
 #include <netinet/udp.h>
 
 #include "lisp.h"
@@ -474,7 +476,7 @@ send_map_request (prefix_t * prefix)
 	int len;
 	char buf[LISP_MSG_BUF_LEN];
 	
-	if (lisp.mapsrvaddr.ss_len == 0) {
+	if (EXTRACT_SALEN (lisp.mapsrvaddr) == 0) {
 		error_warn ("map server is node defined");
 		return -1;
 	}
@@ -485,7 +487,8 @@ send_map_request (prefix_t * prefix)
 	}
 
 	if (sendto (lisp.ctl_socket, buf, len, 0, 
-		    (struct sockaddr *)&(lisp.mapsrvaddr), lisp.mapsrvaddr.ss_len) < 0)
+		    (struct sockaddr *)&(lisp.mapsrvaddr), 
+		    EXTRACT_SALEN (lisp.mapsrvaddr)) < 0)
 		error_warn ("send map request failed");
 
 	return 0;
@@ -507,7 +510,7 @@ send_map_register (struct eid * eid)
 		}
 		if (sendto (lisp.ctl_socket, buf, len, 0,
 			    (struct sockaddr *)&(lisp.mapsrvaddr),
-			    lisp.mapsrvaddr.ss_len) < 0)
+			    EXTRACT_SALEN (lisp.mapsrvaddr)) < 0)
 			error_warn ("send map register failed");
 	}
 

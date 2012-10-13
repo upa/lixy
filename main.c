@@ -12,7 +12,7 @@ int
 create_udp_socket (int port)
 {
 	int sock;
-	int off = 0;
+
 	struct sockaddr_in6 saddr_in6;
 
 	/* IPv4 is supported by Mapped Address */
@@ -26,9 +26,11 @@ create_udp_socket (int port)
 
 	if (bind (sock, (struct sockaddr *) &saddr_in6, sizeof (saddr_in6)) < 0)
 		err (EXIT_FAILURE, "can not bind date plane udp socket");
-
+#if 0
+	int off = 0;
 	if (setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY, &off, sizeof (off)) != 0)
 		err (EXIT_FAILURE, "can not set IPV6_V6ONLY off");
+#endif
 
 	return sock;
 }
@@ -50,18 +52,19 @@ int
 create_lisp_raw_socket (void)
 {
 	int sock;
+	int on = 1;
 
 #ifdef linux
-	int of = 1;
-
-	if ((sock = socket (AF_UNSPEC, SOCK_RAW, IPPROTO_RAW)) < 0)
+	if ((sock = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0)
 		err (EXIT_FAILURE, "can not create raw socket for send packet");
-	
-	if (setsockopt (sock, IPPROTO_IP, IP_HDRINCL, &on, sizeof (onf)) != 0)
-		err (EXIT_FAILURE, "can not set sock opt IPv4 HDRINCL")
 
-	if (setsockopt (sock, IPPROTO_IPV6, IPV6_HDRINCL, &on, sizeof (onf)) != 0)
+	if (setsockopt (sock, IPPROTO_IP, IP_HDRINCL, &on, sizeof (on)) != 0)
+		err (EXIT_FAILURE, "can not set sock opt IPv4 HDRINCL");
+
+#if 0
+	if (setsockopt (sock, IPPROTO_IPV6, IPV6_HDRINCL, &on, sizeof (on)) != 0)
 		err (EXIT_FAILURE, "can not set sock opt IPv6 HDRINCL");
+#endif
 #endif
 
 	return sock;
@@ -87,7 +90,7 @@ create_lisp_cmd_socket (void)
 		err (EXIT_FAILURE, "can not set REUSEADDR to unix socket");
 
 	if (bind (sock, (struct sockaddr *)&saddru, sizeof (saddru)) < 0)
-		error_quit ("%s exists\n", LISP_UNIX_DOMAIN);
+		error_quit ("%s exists", LISP_UNIX_DOMAIN);
 
 	return sock;
 }
