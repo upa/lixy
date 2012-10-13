@@ -92,6 +92,10 @@ create_lisp_cmd_socket (void)
 }
 
 
+
+
+struct lisp lisp;
+
 int
 main (int argc, char * argv[])
 {

@@ -78,6 +78,6 @@ install_mapnode_queried (struct maptable * table, prefix_t * prefix)
 	mn = (struct mapnode *) malloc (sizeof (struct mapnode));
 	mn->state = MAPSTATE_QUERIED;
 
-	udpate_mapnode (table, prefix, mn);
+	update_mapnode (table, prefix, mn);
 	return;
 }

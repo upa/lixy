@@ -492,7 +492,7 @@ send_map_request (prefix_t * prefix)
 }
 
 int
-send_map_reqgister (struct eid * eid)
+send_map_register (struct eid * eid)
 {
 	int len;
 	char buf[LISP_MSG_BUF_LEN];

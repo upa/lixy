@@ -23,11 +23,12 @@ list: $(LIST)/list.h $(LIST)/list.c
 	cd $(LIST)
 	gcc -c list.c list.o
 
-lixy: $(MODULES) $(PATRICIA)/patricia.o $(LIST)/list.o
-	$(CC) $(MODULES) $(PATRICIA)/patricia.o $(LIST)/list.o -o lixy
+lixy: lixy.c $(MODULES) $(PATRICIA)/patricia.o $(LIST)/list.o
+	$(CC) -lcrypto -lpthread lixy.c $(MODULES) \
+	$(PATRICIA)/patricia.o $(LIST)/list.o -o lixy
 
 clean : 
-	$(MODULES) $(PATRICIA)/patricia.o $(LIST)/list.o $(PROGNAME)
+	rm $(MODULES) $(PATRICIA)/patricia.o $(LIST)/list.o $(PROGNAME)
 
 
 error.c		: error.h
