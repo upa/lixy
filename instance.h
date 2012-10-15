@@ -21,7 +21,7 @@ int unset_eid_prefix (struct eid * eid, prefix_t * prefix);
 
 /* Main LISP Thread Instance */
 int set_lisp_mapserver (struct sockaddr_storage mapsrv);
-int set_lisp_locator (struct locator * loc);
+int set_lisp_locator (struct locator loc);
 
 int unset_lisp_mapserver (void);
 int unset_lisp_locator (struct sockaddr_storage loc_addr);

@@ -13,6 +13,7 @@
 /* Misc Parameters */
 #define LISP_CONTROL_PORT	4342
 #define LISP_DATA_PORT		4343
+#define LISP_CONTROL_CPORT	"4342"
 #define LISP_DEFAULT_RECORD_TTL	10	/* min */
 #define LISP_MAX_KEYLEN		128
 

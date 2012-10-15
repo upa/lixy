@@ -49,9 +49,12 @@ struct lisp {
 	struct maptable * rib;			/* For processing caches	*/
 	struct maptable * fib;			/* For lookup to forward packet */
 
+	list_t * cmd_tuple;	/* configuration command list */
+
 	pthread_t process_map_register_t;
 	pthread_t process_map_reply_t;
 	pthread_t lisp_dp_t;
+	pthread_t lisp_op_t;
 };
 
 extern struct lisp lisp;

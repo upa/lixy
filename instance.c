@@ -352,9 +352,15 @@ unset_lisp_mapserver (void)
 }
 
 int
-set_lisp_locator (struct locator * loc)
+set_lisp_locator (struct locator loc)
 {
-	append_listnode (lisp.loc_tuple, loc);
+	struct locator * nloc;
+
+	nloc = (struct loc *) malloc (sizeof (struct locator));
+	memset (nloc, 0, sizeof (struct locator));
+	*nloc = loc;
+
+	append_listnode (lisp.loc_tuple, nloc);
 
 	return 0;
 }
