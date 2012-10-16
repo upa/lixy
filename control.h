@@ -5,37 +5,23 @@
 
 /* All of return value of configuration commands */
 enum return_type {
-	INVALID_COMMAND,
+	SUCCESS,
 
-	SET_MAPSERVER_SUCCESS,
-	SET_MAPSERVER_FAILED,
-	SET_MAPSERVER_FAILED_INVALID_ADDRESS,
+	ERR_FAILED,
+	ERR_INVALID_COMMAND,
+	ERR_INVALID_ADDRESS,
 
-	SET_LOCATOR_SUCCESS,
-	SET_LOCATOR_FAILED,
-	SET_LOCATOR_FAILED_LOCATOR_EXISTS,
-	SET_LOCATOR_FAILED_INVALID_ADDRESS,
+	ERR_EID_EXISTS,
+	ERR_LOCATOR_EXISTS,
+	ERR_INTERFACE_EXISTS,
+	ERR_ADDRESS_EXISTS,
 
-	SET_LOCATOR_PARAM_SUCCESS,
-	SET_LOCATOR_PARAM_FAILED_INVALID_ADDRESS,
-	SET_LOCATOR_PARAM_FAILED_DOES_NOT_EXISTS,
+	ERR_EID_DOES_NOT_EXISTS,
+	ERR_LOCATOR_DOES_NOT_EXISTS,
+	ERR_INTERFACE_DOES_NOT_EXISTS,
+	ERR_ADDRESS_DOES_NOT_EXISTS,
 
-	UNSET_LOCATOR_SUCCESS,
-	UNSET_LOCATOR_FAILED_INVALID_ADDRESS,
-	UNSET_LOCATOR_FAILED_DOES_NOT_EXISTS,
-
-	CREATE_EID_SUCCESS,
-	CREATE_EID_FAILED,
-	CREATE_EID_FAILED_EXSITS,
-
-	SET_EID_INTERFACE_SUCCESS,
-	SET_EID_INTERFACE_FAILED,
-	SET_EID_AUTH_KEY_SUCCESS,
-	SET_EID_AUTH_KEY_FAILED,
-	SET_EID_AUTH_KEY_FAILED_TOO_LONG,
-	SET_EID_PREFIX_SUCCESS,
-	SET_EID_PREFIX_FAILED,
-	SET_EID_PREFIX_FAILED_INVALID_PREFIX
+	ERR_AUTHKEY_TOO_LONG
 };
 
 
@@ -43,13 +29,13 @@ enum return_type {
 
 /*
  * lixyctl [element] [value] [action]
- *
+ *		0	  1		 2 
  *	lixyctl mapserver [v4/v6_prefix] [delete]
- *	lixyctl locator [v4/v6_prefix] [priority|weight|m_prioritu|m_weight|delete]
- *	lixyctl eid eid_name [create|delete]
- *	lixyctl eid eid_name authkey [keystring]
- *	lixyctl eid eid_name interface [interface name]
- *	lixyctl eid eid_name prefix [v4/v6_prefix]
+ *	lixyctl locator   [v4/v6_prefix] [priority|weight|m_prioritu|m_weight|delete]
+ *	lixyctl eid 	  eid_name 	 [create|delete]
+ *	lixyctl eid 	  eid_name 	 authkey [keystring]
+ *	lixyctl eid 	  eid_name 	 interface [interface name]
+ *	lixyctl eid 	  eid_name 	 prefix [v4/v6_prefix] [delete]
  */
 
 #define INIT_CMD_MAX_LEN 16

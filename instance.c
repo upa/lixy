@@ -110,6 +110,7 @@ create_eid_instance (char * eidname)
 	memset (eid , 0, sizeof (struct eid));
 	strncpy (eid->name, eidname, LISP_EID_NAME_LEN);
 	eid->t_flag = -1;
+	eid->prefix_tuple = create_list ();
 
 	return eid;
 }
@@ -151,7 +152,6 @@ int
 set_eid_prefix (struct eid * eid, prefix_t * prefix)
 {
 	append_listnode (eid->prefix_tuple, prefix);
-
 	return 0;
 }
 
@@ -159,6 +159,8 @@ int
 unset_eid_iface (struct eid * eid)
 {
 	STOP_EID_THREAD (eid);
+	close (eid->raw_socket);
+	eid->raw_socket = -1;
 	memset (eid->ifname, 0, IFNAMSIZ);
 	eid->ifname[0] = '\0';
 
@@ -217,7 +219,7 @@ unset_eid_prefix (struct eid * eid, prefix_t * prefix)
 	delete_listnode (eid->prefix_tuple, pp);
 	free (pp);
 
-	return 1;
+	return 0;
 }
 
 

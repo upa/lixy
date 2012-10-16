@@ -62,6 +62,8 @@ search_cmd_node (list_t * cmd_tuple, char * cmd)
 	return search_listnode (cmd_tuple, cmd, compare_cmd_node);
 }
 
+
+
 /* Configure Map Server Address */
 enum return_type 
 cmd_set_map_server (char ** args)
@@ -77,15 +79,15 @@ cmd_set_map_server (char ** args)
 	hints.ai_protocol = IPPROTO_UDP;
 
 	if (getaddrinfo (mapsrvcaddr, LISP_CONTROL_CPORT, &hints, &res) != 0) 
-		return SET_MAPSERVER_FAILED_INVALID_ADDRESS;
+		return ERR_INVALID_ADDRESS;
 	
 	memcpy (&mapsrvaddr, res->ai_addr, res->ai_addrlen);
 	freeaddrinfo (res);
 
 	if (set_lisp_mapserver (mapsrvaddr) != 0) 
-		return SET_MAPSERVER_FAILED_INVALID_ADDRESS;
+		return ERR_INVALID_ADDRESS;
 
-	return SET_MAPSERVER_SUCCESS;
+	return SUCCESS;
 }
 
 enum return_type 
@@ -98,10 +100,12 @@ config_map_server (char ** args)
 	else if (strcmp (action, "delete") == 0) 
 		return unset_lisp_mapserver ();
 	else 
-		return INVALID_COMMAND;
+		return ERR_INVALID_COMMAND;
 
-	return INVALID_COMMAND;
+	return ERR_INVALID_COMMAND;
 }
+
+
 
 
 /* Configure Locators */
@@ -131,7 +135,7 @@ search_locator (struct sockaddr_storage loc_addr)
 }
 
 enum return_type
-cmd_set_locator (char ** args)
+cmd_create_locator (char ** args)
 {
 	char * mapsrvcaddr = args[1];
 	struct locator loc;
@@ -143,23 +147,23 @@ cmd_set_locator (char ** args)
 	hints.ai_protocol = IPPROTO_UDP;
 
 	if (getaddrinfo (mapsrvcaddr, LISP_CONTROL_CPORT, &hints, &res) != 0) 
-		return SET_LOCATOR_FAILED_INVALID_ADDRESS;
+		return ERR_INVALID_ADDRESS;
 
 	memcpy (&(loc.loc_addr), res->ai_addr, res->ai_addrlen);
 	freeaddrinfo (res);
 
 	if (search_locator (loc.loc_addr) != NULL) 
-		return SET_LOCATOR_FAILED_LOCATOR_EXISTS;
+		return ERR_LOCATOR_EXISTS;
 
 	if (set_lisp_locator (loc) != 0) 
-		return SET_LOCATOR_FAILED;
+		return ERR_FAILED;
 
-	return SET_LOCATOR_SUCCESS;
+	return SUCCESS;
 }
 
 
 enum return_type
-cmd_unset_locator (char ** args)
+cmd_delete_locator (char ** args)
 {
 	char * caddr = args[1];
 	struct addrinfo hints, * res;
@@ -171,18 +175,18 @@ cmd_unset_locator (char ** args)
 	hints.ai_protocol = IPPROTO_UDP;
 
 	if (getaddrinfo (caddr, LISP_CONTROL_CPORT, &hints, &res) != 0)
-		return UNSET_LOCATOR_FAILED_INVALID_ADDRESS;
+		return ERR_INVALID_ADDRESS;
 
 	memcpy (&loc_addr, res->ai_addr, res->ai_addrlen);
 
 	if (unset_lisp_locator (loc_addr) != 0) {
 		freeaddrinfo (res);
-		return UNSET_LOCATOR_FAILED_DOES_NOT_EXISTS;
+		return ERR_LOCATOR_DOES_NOT_EXISTS;
 	}
 	
 	freeaddrinfo (res);
 
-	return UNSET_LOCATOR_SUCCESS;
+	return SUCCESS;
 }
 
 enum return_type
@@ -201,17 +205,17 @@ cmd_set_locator_paramater (char ** args)
 	hints.ai_protocol = IPPROTO_UDP;
 
 	if (getaddrinfo (caddr, LISP_CONTROL_CPORT, &hints, &res) != 0)
-		return SET_LOCATOR_PARAM_FAILED_INVALID_ADDRESS;
+		return ERR_INVALID_ADDRESS;
 
 	freeaddrinfo (res);
 	memcpy (&loc_addr, res->ai_addr, res->ai_addrlen);
 
 	if ((loc = search_locator (loc_addr)) == NULL) {
-		return SET_LOCATOR_PARAM_FAILED_DOES_NOT_EXISTS;
+		return ERR_LOCATOR_DOES_NOT_EXISTS;
 	}
 
 	if (param == NULL || value == NULL) 
-		return INVALID_COMMAND;
+		return ERR_INVALID_COMMAND;
 
 	if (strcmp (param, "priority") == 0) 
 		loc->priority = atoi (value);
@@ -222,9 +226,9 @@ cmd_set_locator_paramater (char ** args)
 	else if (strcmp (param, "m_weight") == 0) 
 		loc->m_weight = atoi (value);
 	else 
-		return INVALID_COMMAND;
+		return ERR_INVALID_COMMAND;
 
-	return SET_LOCATOR_PARAM_SUCCESS;
+	return SUCCESS;
 }
 
 enum return_type
@@ -233,12 +237,12 @@ config_locator (char ** args)
 
 	/* that is create locator */
 	if (args[2] == NULL) 
-		return cmd_set_locator (args);
+		return cmd_create_locator (args);
 
 
 	/* that is delete locator only */
 	if (strcmp (args[2], "delete") != 0) 
-		return cmd_unset_locator (args);
+		return cmd_delete_locator (args);
 
 
 	/* else if configure paramater */
@@ -246,7 +250,285 @@ config_locator (char ** args)
 }
 
 
-enum return_type cmd_create_eid (char ** args);
-enum return_type cmd_set_eid_interface (char ** args);
-enum return_type cmd_set_eid_authentication_key (char ** args);
-enum return_type cmd_set_eid_prefix (char ** args);
+
+/* Configure EID functions */
+
+int
+compare_eid (void * n, void * e)
+{
+	char * name = n;
+	struct eid * eid = e;
+
+	return strncmp (name, eid->name, LISP_EID_NAME_LEN);
+}
+
+
+
+struct eid *
+search_eid (char * eid_name)
+{
+	return search_listnode (lisp.eid_tuple, eid_name, compare_eid);
+}
+
+
+enum return_type 
+cmd_create_eid (char ** args)
+{
+	char * eid_name = args[1];
+	struct eid * eid;
+	
+	if (search_eid (eid_name) != NULL)
+		return ERR_EID_EXISTS;
+
+	eid = create_eid_instance (eid_name);
+	append_listnode (lisp.eid_tuple, eid);
+
+	return SUCCESS;
+}
+
+
+enum return_type 
+cmd_delete_eid (char ** args)
+{
+	char * eid_name = args[1];
+	struct eid * eid;
+
+	if ((eid = search_eid (eid_name)) == NULL) 
+		return ERR_EID_DOES_NOT_EXISTS;
+	
+	delete_eid_instance (eid);
+	delete_listnode (lisp.eid_tuple, eid);
+	free (eid);
+
+	return SUCCESS;
+}
+
+
+enum return_type 
+cmd_set_eid_interface (char ** args)
+{
+	char * eid_name = args[1];
+	char * ifname = args[2];
+	struct eid * eid;
+
+	if (if_nametoindex (ifname) == 0) 
+		return ERR_INTERFACE_DOES_NOT_EXISTS;
+
+	if ((eid = search_eid (eid_name)) == NULL) 
+		return ERR_EID_DOES_NOT_EXISTS;
+
+	if (set_eid_iface (eid, ifname) < 0)
+		return ERR_FAILED;
+	
+	return SUCCESS;
+}
+
+
+enum return_type 
+cmd_unset_eid_interface (char ** args)
+{
+	char * eid_name = args[1];
+	struct eid * eid;
+
+	if ((eid = search_eid (eid_name)) == NULL)
+		return ERR_EID_DOES_NOT_EXISTS;
+
+	if (unset_eid_iface (eid) != 0)
+		return ERR_FAILED;
+
+	return SUCCESS;
+}
+
+enum return_type 
+cmd_set_eid_authentication_key (char ** args)
+{
+	char * eid_name = args[1];
+	char * key = args[2];
+	struct eid * eid;
+
+	if ((eid = search_eid (eid_name)) == NULL)
+		return ERR_EID_DOES_NOT_EXISTS;
+
+	if (strlen (key) > LISP_MAX_KEYLEN)
+		return ERR_AUTHKEY_TOO_LONG;
+
+	memcpy (eid->authkey, key, strlen (key) + 1);
+
+	return SUCCESS;
+}
+
+enum return_type 
+cmd_unset_eid_authentication_key (char ** args)
+{
+	char * eid_name = args[1];
+	struct eid * eid;
+
+	if ((eid = search_eid (eid_name)) == NULL)
+		return ERR_EID_DOES_NOT_EXISTS;
+
+	if (unset_eid_authkey (eid) != 0) 
+		return ERR_FAILED;
+
+	return SUCCESS;
+}
+
+int
+compare_prefix (void * d1, void * d2)
+{
+	prefix_t * p1 = d1;
+	prefix_t * p2 = d2;
+
+	if (p1->family != p2->family)
+		return -1;
+
+	if (p1->bitlen != p2->bitlen)
+		return -1;
+
+	switch (p1->family) {
+	case AF_INET :
+		if (COMPARE_SADDR_IN (p1->add.sin, p2->add.sin))
+			return 0;
+		break;
+	case AF_INET6 :
+		if (COMPARE_SADDR_IN6 (p1->add.sin6, p2->add.sin6))
+			return 0;
+		break;
+	}
+
+	return -1;
+}
+
+prefix_t *
+search_prefix (list_t * list, prefix_t * prefix)
+{
+	return search_listnode (list, prefix, compare_prefix);
+}
+
+enum return_type 
+cmd_set_eid_prefix (char ** args)
+{
+	char * eid_name = args[1];
+	char * c_prefix = args[3];
+	prefix_t * prefix;
+	struct addrinfo hints, * res;
+	struct eid * eid;
+
+	if ((eid = search_eid (eid_name)) == NULL)
+		return ERR_EID_DOES_NOT_EXISTS;
+
+	memset (&hints, 0, sizeof (hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_protocol = IPPROTO_UDP;
+	
+	if (getaddrinfo (c_prefix, LISP_CONTROL_CPORT, &hints, &res) != 0)
+		return ERR_INVALID_ADDRESS;
+
+	switch (res->ai_family) {
+	case AF_INET :
+		prefix = ascii2prefix (AF_INET, c_prefix);
+		break;
+	case AF_INET6 :
+		prefix = ascii2prefix (AF_INET6, c_prefix);
+		break;
+	default :
+		return ERR_INVALID_ADDRESS;
+		break;
+	}
+
+	if (prefix == NULL)
+		return ERR_INVALID_ADDRESS;
+
+	if (search_prefix (eid->prefix_tuple, prefix) != NULL)
+		return ERR_ADDRESS_EXISTS;
+	
+	append_listnode (eid->prefix_tuple, prefix);
+	
+	return SUCCESS;
+}
+
+enum return_type 
+cmd_unset_eid_prefix (char ** args)
+{
+	char * eid_name = args[1];
+	char * c_prefix = args[3];
+	prefix_t * prefix, * pprefix;
+	struct addrinfo hints, * res;
+	struct eid * eid;
+
+	if ((eid = search_eid (eid_name)) == NULL)
+		return ERR_EID_DOES_NOT_EXISTS;
+
+	memset (&hints, 0, sizeof (hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_protocol = IPPROTO_UDP;
+	
+	if (getaddrinfo (c_prefix, LISP_CONTROL_CPORT, &hints, &res) != 0)
+		return ERR_INVALID_ADDRESS;
+
+	switch (res->ai_family) {
+	case AF_INET :
+		prefix = ascii2prefix (AF_INET, c_prefix);
+		break;
+	case AF_INET6 :
+		prefix = ascii2prefix (AF_INET6, c_prefix);
+		break;
+	default :
+		freeaddrinfo (res);
+		return ERR_INVALID_ADDRESS;
+		break;
+	}
+
+	freeaddrinfo (res);
+
+	if (prefix == NULL)
+		return ERR_INVALID_ADDRESS;
+
+	if ((pprefix = search_prefix (eid->prefix_tuple, prefix)) == NULL) {
+		free (prefix);
+		return ERR_ADDRESS_DOES_NOT_EXISTS;
+	}
+	
+	delete_listnode (eid->prefix_tuple, pprefix);
+	free (prefix);
+	free (pprefix);
+
+	return SUCCESS;
+}
+
+
+enum return_type 
+config_eid (char ** args)
+{
+	char * action = args[2];
+	
+	if (strcmp (action, "create") == 0) {
+		return cmd_create_eid (args);
+	}
+
+	else if (strcmp (action, "delete") == 0) {
+		return cmd_delete_eid (args);
+	}
+
+	else if (strcmp (action, "authkey") == 0) {
+		return cmd_set_eid_authentication_key (args);
+	}
+
+	else if (strcmp (action, "interface") == 0) {
+		cmd_unset_eid_interface (args);
+		return cmd_set_eid_interface (args);
+	}
+
+	else if (strcmp (action, "prefix") == 0) {
+		char * delete = args[4];
+		if (delete != NULL) {
+			if (strcmp (delete, "delete") == 0)
+				return cmd_unset_eid_prefix (args);
+		} else {
+			return cmd_set_eid_prefix (args);
+		}
+	}
+
+	return ERR_INVALID_COMMAND;
+}

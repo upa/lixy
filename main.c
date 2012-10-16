@@ -7,6 +7,7 @@
 #include "common.h"
 #include "error.h"
 #include "instance.h"
+#include "control.h"
 
 int 
 create_udp_socket (int port)
@@ -119,6 +120,7 @@ main (int argc, char * argv[])
 
 	lisp.eid_tuple = create_list ();
 	lisp.loc_tuple = create_list ();
+	lisp.cmd_tuple = install_cmd_node ();
 
 	lisp.rib = create_maptable ();
 	lisp.fib = create_maptable ();
