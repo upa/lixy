@@ -2,7 +2,7 @@
 
 CC = gcc -Wall -g
 
-MODULES = error.o instance.o map.o maptable.o
+MODULES = error.o instance.o map.o maptable.o control.o
 PATRICIA = patricia
 LIST = list
 PROGNAME = lixy
@@ -39,4 +39,5 @@ map.c		: common.h lisp.h error.h map.h sockaddrmacro.h
 maptable.h	: common.h $(PATRICIA)/patricia.h
 maptable.c	: maptable.h sockaddrmacro.h
 common.h	: lisp.h list/list.h patricia/patricia.h
-
+control.h	: list/list.h
+control.c	: control.h instance.h sockaddrmacro.h error.h

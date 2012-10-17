@@ -96,7 +96,7 @@ create_lisp_cmd_socket (void)
 		err (EXIT_FAILURE, "can not set REUSEADDR to unix socket");
 
 	if (bind (sock, (struct sockaddr *)&saddru, sizeof (saddru)) < 0)
-		error_quit ("%s exists", LISP_UNIX_DOMAIN);
+		error_quit ("can not bind unix socket : %s", strerror (errno));
 
 	return sock;
 }
@@ -120,15 +120,18 @@ main (int argc, char * argv[])
 
 	lisp.eid_tuple = create_list ();
 	lisp.loc_tuple = create_list ();
+
 	lisp.cmd_tuple = install_cmd_node ();
+	lisp.ctl_message = install_control_message ();
 
 	lisp.rib = create_maptable ();
 	lisp.fib = create_maptable ();
 	
 	start_lisp_thread (&(lisp.process_map_register_t), lisp_map_register_thread);
 	start_lisp_thread (&(lisp.process_map_reply_t), lisp_map_reply_thread);
+	start_lisp_thread (&(lisp.lisp_dp_t), lisp_dp_thread);
 
-	lisp_dp_thread (NULL);
+	lisp_op_thread (NULL);
 
 	/* not reached */
 

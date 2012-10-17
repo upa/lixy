@@ -4,10 +4,32 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <unistd.h>
 
 #include "control.h"
 #include "instance.h"
 #include "sockaddrmacro.h"
+#include "error.h"
+
+int
+strsplit (char * str, char ** argv, int maxnum)
+{
+        int argc;
+        char * c;
+
+        for (argc = 0, c = str; *c == ' '; c++);
+        while (*c && argc < maxnum) {
+                argv[argc++] = c;
+                while (*c && *c > ' ') c++;
+                while (*c && *c <= ' ') *c++ = '\0';
+        }
+
+	if (argc >= maxnum)
+		return -1;
+
+        return argc;
+}
+
 
 list_t *
 install_cmd_node (void)
@@ -47,6 +69,41 @@ install_cmd_node (void)
 	return cmd_tuple;
 }
 
+
+char **
+install_control_message (void)
+{
+	int n;
+	char ** ptr;
+
+	ptr = (char **) malloc (sizeof (char *) * RETURN_TYPE_MAX);
+	memset (ptr, 0, sizeof (char *) * RETURN_TYPE_MAX);
+	for (n = 0; n < RETURN_TYPE_MAX; n++) {
+		ptr[n] = (char *) malloc (CONTROL_MSG_MAX_LEN);
+		memset (ptr[n], 0, sizeof (CONTROL_MSG_MAX_LEN));
+		ptr[n][0] = '\0';
+	}
+
+#define SET_CONTROL_MSG(PTR, NUM, MSG)		\
+	strncpy ((PTR[(NUM)]), (MSG), CONTROL_MSG_MAX_LEN);
+
+	SET_CONTROL_MSG (ptr, SUCCESS, "success");
+	SET_CONTROL_MSG (ptr, ERR_FAILED, "failed");
+	SET_CONTROL_MSG (ptr, ERR_INVALID_COMMAND, "invalid command");
+	SET_CONTROL_MSG (ptr, ERR_INVALID_ADDRESS, "invalid address");
+	SET_CONTROL_MSG (ptr, ERR_EID_EXISTS, "EID exists");
+	SET_CONTROL_MSG (ptr, ERR_LOCATOR_EXISTS, "Locator exists");
+	SET_CONTROL_MSG (ptr, ERR_INTERFACE_EXISTS, "Interface exists");
+	SET_CONTROL_MSG (ptr, ERR_ADDRESS_EXISTS, "Address exists");
+	SET_CONTROL_MSG (ptr, ERR_EID_DOES_NOT_EXISTS, "EID does not exists");
+	SET_CONTROL_MSG (ptr, ERR_LOCATOR_DOES_NOT_EXISTS, "Locator does not exists");
+	SET_CONTROL_MSG (ptr, ERR_INTERFACE_DOES_NOT_EXISTS, "Interface doesnot exists");
+	SET_CONTROL_MSG (ptr, ERR_ADDRESS_DOES_NOT_EXISTS, "Address does not exists");
+	SET_CONTROL_MSG (ptr, ERR_AUTHKEY_TOO_LONG, "authentication key is too long");
+	
+	return ptr;
+}
+
 int
 compare_cmd_node (void * pa, void * pb)
 {
@@ -63,6 +120,55 @@ search_cmd_node (list_t * cmd_tuple, char * cmd)
 }
 
 
+void *
+lisp_op_thread (void * param)
+{
+	/* Process control command */
+
+	int n, accept_socket;
+	char buf[CONTROL_MSG_BUF_LEN];
+	char * args[CONTROL_ARGS_MAX];
+	struct cmd_node * cnode;
+
+	listen (lisp.ctl_socket, 1);
+
+	while (1) {
+		for (n = 0; n < CONTROL_ARGS_MAX; n++) 
+			args[n] = NULL;
+		memset (buf, 0, sizeof (buf));
+		accept_socket = accept (lisp.ctl_socket, NULL, 0);
+
+		if (read (accept_socket, buf, sizeof (buf)) < 0) {
+			error_warn ("%s: read(2) control socket failed", __func__);
+			shutdown (accept_socket, 1);
+			close (accept_socket);
+			continue;
+		}
+		
+		if (strsplit (buf, args, CONTROL_ARGS_MAX) < 0) {
+			error_warn ("%s: parse command failed", __func__);
+			WRITE_CONTROL_MSG (accept_socket, ERR_INVALID_COMMAND);
+			shutdown (accept_socket, 1);
+			close (accept_socket);
+			continue;
+		}
+		
+		if ((cnode = search_cmd_node (lisp.cmd_tuple, args[0])) == NULL) {
+			error_warn ("%s: invalid command %s", __func__, args[0]);
+			WRITE_CONTROL_MSG (accept_socket, ERR_INVALID_COMMAND);
+			shutdown (accept_socket, 1);
+			close (accept_socket);
+			continue;
+		}
+			
+		n = cnode->func (accept_socket, args);
+		WRITE_CONTROL_MSG (accept_socket, n);
+		shutdown (accept_socket, 1);
+		close (accept_socket);
+	}
+
+	return NULL;
+}
 
 /* Configure Map Server Address */
 enum return_type 
@@ -91,7 +197,7 @@ cmd_set_map_server (char ** args)
 }
 
 enum return_type 
-config_map_server (char ** args)
+config_map_server (int socket, char ** args)
 {
 	char * action = args[2];
 
@@ -232,7 +338,7 @@ cmd_set_locator_paramater (char ** args)
 }
 
 enum return_type
-config_locator (char ** args)
+config_locator (int socket, char ** args)
 {
 
 	/* that is create locator */
@@ -499,7 +605,7 @@ cmd_unset_eid_prefix (char ** args)
 
 
 enum return_type 
-config_eid (char ** args)
+config_eid (int socket, char ** args)
 {
 	char * action = args[2];
 	

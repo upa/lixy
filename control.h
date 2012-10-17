@@ -3,28 +3,36 @@
 
 #include "list/list.h"
 
-/* All of return value of configuration commands */
+#define CONTROL_MSG_BUF_LEN	1024
+#define CONTROL_ARGS_MAX	8
+#define CONTROL_MSG_MAX_LEN	512
+
+/* 
+ * All of return value of configuration commands 
+ * return messages are defined in install_control_message
+*/
 enum return_type {
 	SUCCESS,
-
 	ERR_FAILED,
 	ERR_INVALID_COMMAND,
 	ERR_INVALID_ADDRESS,
-
 	ERR_EID_EXISTS,
 	ERR_LOCATOR_EXISTS,
 	ERR_INTERFACE_EXISTS,
 	ERR_ADDRESS_EXISTS,
-
 	ERR_EID_DOES_NOT_EXISTS,
 	ERR_LOCATOR_DOES_NOT_EXISTS,
 	ERR_INTERFACE_DOES_NOT_EXISTS,
 	ERR_ADDRESS_DOES_NOT_EXISTS,
+	ERR_AUTHKEY_TOO_LONG,
 
-	ERR_AUTHKEY_TOO_LONG
+	RETURN_TYPE_MAX			/* sentinel */
 };
 
-
+#define GET_CONTROL_MSG(TYPE) lisp.ctl_message[(TYPE)]
+#define GET_CONTROL_MSG_LEN(TYPE) (strlen (GET_CONTROL_MSG((TYPE))) + 1)
+#define WRITE_CONTROL_MSG(SOCKET, TYPE) \
+	write ((SOCKET), GET_CONTROL_MSG((TYPE)), GET_CONTROL_MSG_LEN(TYPE) + 1)
 
 
 /*
@@ -43,17 +51,18 @@ enum return_type {
 struct cmd_node {
 	int depth;
 	char init_cmd[INIT_CMD_MAX_LEN];
-	enum return_type (* func) (char **);
+	enum return_type (* func) (int socket, char **);
 };
 
 /* actually executed commands */
-enum return_type config_map_server (char ** args);
-enum return_type config_locator (char ** args);
-enum return_type config_eid (char ** args);
+enum return_type config_map_server (int socket, char ** args);
+enum return_type config_locator (int socket, char ** args);
+enum return_type config_eid (int socket, char ** args);
 
 
 
 list_t * install_cmd_node (void);
+char ** install_control_message (void);
 void * lisp_op_thread (void * param);
 
 

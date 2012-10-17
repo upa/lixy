@@ -50,6 +50,7 @@ struct lisp {
 	struct maptable * fib;			/* For lookup to forward packet */
 
 	list_t * cmd_tuple;	/* configuration command list */
+	char ** ctl_message;	/* return message to control */
 
 	pthread_t process_map_register_t;
 	pthread_t process_map_reply_t;
