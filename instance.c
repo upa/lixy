@@ -305,7 +305,8 @@ eid_forwarding_thread (void * param)
 			continue;
 		} 
 
-		if (mn->state == MAPSTATE_NEGATIVE || mn->state == MAPSTATE_QUERIED) {
+		if (mn->state == MAPSTATE_NEGATIVE || 
+		    mn->state == MAPSTATE_QUERIED {
 			/* native forwarding */
 			switch (ntohs (ehdr->ether_type)) {
 			case AF_INET : 
@@ -315,7 +316,8 @@ eid_forwarding_thread (void * param)
 				sendraw6 (lisp.raw6_socket, ip);
 				break;
 			}
-		} else if (mn->state == MAPSTATE_ACTIVE) {
+		} else if (mn->state == MAPSTATE_ACTIVE ||
+			   mn->state == MAPSTATE_STATIC) {
 			/* LISP Encapsulated forwarding to LISP SITE */
 			mhdr.msg_name = &(mn->addr);
 			mhdr.msg_namelen = EXTRACT_SALEN(mn->addr);
@@ -358,7 +360,7 @@ set_lisp_locator (struct locator loc)
 {
 	struct locator * nloc;
 
-	nloc = (struct loc *) malloc (sizeof (struct locator));
+	nloc = (struct locator *) malloc (sizeof (struct locator));
 	memset (nloc, 0, sizeof (struct locator));
 	*nloc = loc;
 

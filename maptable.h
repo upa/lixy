@@ -18,12 +18,25 @@ struct mapnode {
 	struct locator locator;
 };
 
+#define MAPTALBE_TREE(MT) (MT)->tree
+#define MAPTABLE_TREE_HEAD(MT) (MT)->tree->head
+
 #define MAPTIMER_DEFAULT	60	/* 1min */
+
+/* Map Cache States */
 #define MAPSTATE_ACTIVE		0
 #define MAPSTATE_NEGATIVE	1
 #define MAPSTATE_DROP		2
 #define MAPSTATE_QUERIED	3
+#define MAPSTATE_STATIC		4
 
+char * mapstate_string[] = {
+	"active",
+	"negative",
+	"drop",
+	"queried",
+	"static"
+};
 
 /* Prototypes */
 
@@ -37,6 +50,12 @@ struct mapnode * delete_mapnode (struct maptable * table, prefix_t * prefix);
 struct mapnode * search_mapnode (struct maptable * table, prefix_t * prefix);
 
 inline void install_mapnode_queried (struct maptable * table, prefix_t * prefix);
+
+
+void install_mapnode_static (struct maptable * table, prefix_t * prefix, 
+			     struct sockaddr_storage dst);
+void uninstall_mapnode_static (struct maptable * table, prefix_t * prefix);
+
 
 
 /* Macros */

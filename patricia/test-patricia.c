@@ -36,22 +36,47 @@ main (int argc, char * argv[])
 	p3 = ascii2prefix (AF_INET, "192.168.1.0/24");
 
 	node = patricia_lookup (v4table, p1);
-	if (node->data == NULL) {
+/*	if (node->data == NULL) {
 		printf ("node is NULL\n");
 		node->user1 = buf;
-	}
+		}*/
+
 	patricia_lookup (v4table, p2);
 	patricia_lookup (v4table, p3);
 
+	printf ("process\n");
 	patricia_process (v4table, process_func);
 
-
+/*
 	printf ("Free ALL!!\n");
 	free (p1);
 	free (p2);
 	free (p3);
+*/
+
+	patricia_node_t * pnode = NULL;
+	printf ("walk\n");
+	PATRICIA_WALK (v4table->head, pnode) {
+		if (pnode->prefix) {
+			printf ("%s/%d\n", 
+				inet_ntoa (pnode->prefix->add.sin), 
+				pnode->prefix->bitlen);
+		}
+	} PATRICIA_WALK_END;
+		
+
+	printf ("walk\n");
+	PATRICIA_WALK (v4table->head, pnode) {
+		if (pnode->prefix) {
+			printf ("%s/%d\n", 
+				inet_ntoa (pnode->prefix->add.sin), 
+				pnode->prefix->bitlen);
+		}
+	} PATRICIA_WALK_END;
+
 
 	printf ("\nlookup!\n");
+
 
 
 	prefix_t *pp;

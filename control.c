@@ -11,6 +11,8 @@
 #include "sockaddrmacro.h"
 #include "error.h"
 
+#define WRITE_SOCKET(sock, str) write (sock, str, strlen (str) + 1)
+
 int
 strsplit (char * str, char ** argv, int maxnum)
 {
@@ -65,6 +67,14 @@ install_cmd_node (void)
 	eid->func = config_eid;
 	append_listnode (cmd_tuple, eid);
 
+	/* install show command node */
+	struct cmd_node * show;
+	show = (struct cmd_node *) malloc (sizeof (struct cmd_node));
+	memset (show, 0, sizeof (struct cmd_node));
+	show->depth = 1;
+	strncpy (eid->init_cmd, "show", INIT_CMD_MAX_LEN);
+	show->func = config_show;
+	append_listnode (cmd_tuple, show);
 
 	return cmd_tuple;
 }
@@ -88,6 +98,7 @@ install_control_message (void)
 	strncpy ((PTR[(NUM)]), (MSG), CONTROL_MSG_MAX_LEN);
 
 	SET_CONTROL_MSG (ptr, SUCCESS, "success");
+	SET_CONTROL_MSG (ptr, SUCCESS_NO_MESSAGE, "");
 	SET_CONTROL_MSG (ptr, ERR_FAILED, "failed");
 	SET_CONTROL_MSG (ptr, ERR_INVALID_COMMAND, "invalid command");
 	SET_CONTROL_MSG (ptr, ERR_INVALID_ADDRESS, "invalid address");
@@ -634,6 +645,182 @@ config_eid (int socket, char ** args)
 		} else {
 			return cmd_set_eid_prefix (args);
 		}
+	}
+
+	return ERR_INVALID_COMMAND;
+}
+
+/* show parameter functions */
+
+enum return_type
+cmd_show_route (int af, int socket, char ** args)
+{
+	int state;
+	char * type = args[2];
+	char buf[CONTROL_MSG_BUF_LEN], addrbuf1[52], addrbuf2[52];
+	patricia_node_t * pn;
+	struct mapnode * mn;
+
+	if (type == NULL) 
+		state = -1;
+
+	else if (strcmp (type, "active")) 
+		state = MAPSTATE_ACTIVE;
+	
+	else if (strcmp (type, "negative")) 
+		state = MAPSTATE_NEGATIVE;
+	
+	else if (strcmp (type, "drop")) 
+		state = MAPSTATE_DROP;
+	
+	else if (strcmp (type, "queried")) 
+		state = MAPSTATE_QUERIED;
+
+	else if (strcmp (type, "static")) 
+		state = MAPSTATE_STATIC;
+
+
+
+	PATRICIA_WALK (MAPTABLE_TREE_HEAD (lisp.rib), pn) {
+		mn = (struct mapnode *) (pn->data);
+		if (state < 0 || state == mn->state) {
+
+			if (pn->prefix->family != af) 
+				PATRICIA_WALK_BREAK;
+
+			/* extract destination prefix from prefix_t*/
+			inet_ntop (pn->prefix->family, &(pn->prefix->add), 
+				   addrbuf1, sizeof (addrbuf1));
+
+			/* extract ETR address from sockaddr_storage*/
+			switch (EXTRACT_FAMILY (mn->addr)) {
+			case AF_INET :
+				inet_ntop (AF_INET, &(EXTRACT_INADDR (mn->addr)), 
+					   addrbuf2, sizeof (addrbuf2));
+				break;
+			case AF_INET6 :
+				inet_ntop (AF_INET6, &(EXTRACT_IN6ADDR (mn->addr)), 
+					   addrbuf2, sizeof (addrbuf2));
+				break;
+			}
+			
+
+			snprintf (buf, sizeof (buf), "%s/%d %s %s\n", 
+				  addrbuf1, pn->prefix->bitlen, addrbuf2, 
+				  mapstate_string[mn->state]);
+			WRITE_SOCKET (socket, buf);
+		} 
+	} PATRICIA_WALK_END;
+	
+	
+	return SUCCESS_NO_MESSAGE;
+}
+
+
+void
+cmd_write_eid (int socket, struct eid * eid)
+{
+	char buf[CONTROL_MSG_BUF_LEN];
+	char addrbuf[52];
+	listnode_t * ln;
+	prefix_t * prefix;
+
+	memset (buf, 0, sizeof (buf));
+
+	snprintf (buf, sizeof (buf), 
+		  "Name : %s\n"
+		  "   Inteface : %s\n"
+		  "   Auth Key : %s\n"
+		  "   Prefixes :", 
+		  eid->name, eid->ifname, eid->authkey);
+
+	MYLIST_FOREACH (eid->prefix_tuple, ln) {
+		prefix = (prefix_t *) (ln->data);
+		inet_ntop (prefix->family, &(prefix->add), addrbuf, sizeof (addrbuf));
+		snprintf (buf, sizeof (buf), "%s %s", buf, addrbuf);
+	}
+	
+	snprintf (buf, sizeof (buf), "%s\n\n", buf);
+
+	WRITE_SOCKET (socket, buf);
+
+	return;
+}
+
+enum return_type
+cmd_show_eid (int socket, char ** args)
+{
+	char * eid_name = args[2];
+	listnode_t * ln;
+	struct eid * eid;
+
+	if (eid_name != NULL) {
+		if ((eid = search_eid (eid_name)) == NULL)
+			return ERR_EID_DOES_NOT_EXISTS;
+
+		cmd_write_eid (socket, eid);
+	} else {
+		MYLIST_FOREACH (lisp.eid_tuple, ln) {
+			eid = (struct eid *) (ln->data);
+			cmd_write_eid (socket, eid);
+		}
+	}
+
+	return SUCCESS_NO_MESSAGE;
+}
+	
+enum return_type
+cmd_show_mapserver (int socket, char ** args)
+{
+	char buf[CONTROL_MSG_BUF_LEN], addrbuf[52];
+	
+	memset (buf, 0, sizeof (buf));
+	memset (addrbuf, 0, sizeof (addrbuf));
+
+	switch (EXTRACT_FAMILY (lisp.mapsrvaddr)) {
+	case AF_INET :
+		inet_ntop (AF_INET, &(EXTRACT_INADDR (lisp.mapsrvaddr)), 
+				      addrbuf, sizeof (addrbuf));
+		snprintf (buf, sizeof (buf), "map server address : %s\n", addrbuf);
+		break;
+
+	case AF_INET6 :
+		inet_ntop (AF_INET6, &(EXTRACT_IN6ADDR (lisp.mapsrvaddr)), 
+				      addrbuf, sizeof (addrbuf));
+		snprintf (buf, sizeof (buf), "map server address : %s\n", addrbuf);
+		break;
+
+	default :
+		snprintf (buf, sizeof (buf), "map server is node defined\n");
+		break;
+	}
+	
+	WRITE_SOCKET (socket, buf);
+
+	return SUCCESS_NO_MESSAGE;
+}
+
+
+
+enum return_type
+config_show (int socket, char ** args)
+{
+	char * action = args[2];
+
+	if (strcmp (action, "ipv4-route") == 0) {
+		return cmd_show_route (AF_INET6, socket, args);
+	}
+	
+	else if (strcmp (action, "ipv6-route") == 0) {
+		return cmd_show_route (AF_INET6, socket, args);
+	}
+
+	else if (strcmp (action, "eid") == 0) {
+		return cmd_show_eid (socket, args);
+	}
+
+	else if (strcmp (action, "map-server") == 0) {
+		return cmd_show_mapserver (socket, args);
 	}
 
 	return ERR_INVALID_COMMAND;

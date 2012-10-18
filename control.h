@@ -13,6 +13,7 @@
 */
 enum return_type {
 	SUCCESS,
+	SUCCESS_NO_MESSAGE,
 	ERR_FAILED,
 	ERR_INVALID_COMMAND,
 	ERR_INVALID_ADDRESS,
@@ -44,6 +45,12 @@ enum return_type {
  *	lixyctl eid 	  eid_name 	 authkey [keystring]
  *	lixyctl eid 	  eid_name 	 interface [interface name]
  *	lixyctl eid 	  eid_name 	 prefix [v4/v6_prefix] [delete]
+ *
+ *      lixyctl show      ipv4-route     [active|negative|drop|queried|static]
+ *      lixyctl show      ipv6-route     [active|negative|drop|queried|static]
+ *      lixyctl show      eid            [eid name]
+ *      lixyctl show      map-server
+ *
  */
 
 #define INIT_CMD_MAX_LEN 16
@@ -58,8 +65,7 @@ struct cmd_node {
 enum return_type config_map_server (int socket, char ** args);
 enum return_type config_locator (int socket, char ** args);
 enum return_type config_eid (int socket, char ** args);
-
-
+enum return_type config_show (int socket, char ** args);
 
 list_t * install_cmd_node (void);
 char ** install_control_message (void);
