@@ -10,6 +10,7 @@
 #include "instance.h"
 #include "sockaddrmacro.h"
 #include "error.h"
+#include "maptable.h"
 
 #define WRITE_SOCKET(sock, str) write (sock, str, strlen (str) + 1)
 
@@ -141,13 +142,15 @@ lisp_op_thread (void * param)
 	char * args[CONTROL_ARGS_MAX];
 	struct cmd_node * cnode;
 
-	listen (lisp.ctl_socket, 1);
+	if (listen (lisp.cmd_socket, 1) < 0)
+		error_quit ("%s: listen_failed", __func__);
 
 	while (1) {
 		for (n = 0; n < CONTROL_ARGS_MAX; n++) 
 			args[n] = NULL;
 		memset (buf, 0, sizeof (buf));
-		accept_socket = accept (lisp.ctl_socket, NULL, 0);
+
+		accept_socket = accept (lisp.cmd_socket, NULL, 0);
 
 		if (read (accept_socket, buf, sizeof (buf)) < 0) {
 			error_warn ("%s: read(2) control socket failed", __func__);
@@ -658,8 +661,10 @@ cmd_show_route (int af, int socket, char ** args)
 	int state;
 	char * type = args[2];
 	char buf[CONTROL_MSG_BUF_LEN], addrbuf1[52], addrbuf2[52];
+	char * mapstate_string[] = MAPSTATE_STRING_INIT ();
 	patricia_node_t * pn;
 	struct mapnode * mn;
+
 
 	if (type == NULL) 
 		state = -1;
@@ -824,4 +829,28 @@ config_show (int socket, char ** args)
 	}
 
 	return ERR_INVALID_COMMAND;
+}
+
+
+
+/* install/uninstall static route*/
+enum return_type
+config_route (int socket, char ** args)
+{
+	char * action = args[2];
+
+	if (strcmp (action, "delete") == 0) {
+		return cmd_delete_route (args);
+	} else {
+		return cmd_isntall_route (args);
+	}
+
+	return ERR_INVALID_COMMAND;
+}
+
+
+enum return_type
+cmd_delete_route (args)
+{
+	
 }

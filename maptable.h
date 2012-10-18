@@ -30,13 +30,14 @@ struct mapnode {
 #define MAPSTATE_QUERIED	3
 #define MAPSTATE_STATIC		4
 
-char * mapstate_string[] = {
-	"active",
-	"negative",
-	"drop",
-	"queried",
-	"static"
-};
+#define MAPSTATE_STRING_INIT()			\
+	{					\
+		"active",			\
+		"negative",			\
+		"drop",				\
+		"queried",			\
+		"static"			\
+	}					\
 
 /* Prototypes */
 
@@ -53,8 +54,10 @@ inline void install_mapnode_queried (struct maptable * table, prefix_t * prefix)
 
 
 void install_mapnode_static (struct maptable * table, prefix_t * prefix, 
-			     struct sockaddr_storage dst);
-void uninstall_mapnode_static (struct maptable * table, prefix_t * prefix);
+			     struct sockaddr_storage addr);
+
+/* return value : 0 is sucess, -1 is faield */
+int uninstall_mapnode_static (struct maptable * table, prefix_t * prefix);
 
 
 

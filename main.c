@@ -82,7 +82,6 @@ int
 create_lisp_cmd_socket (void)
 {
 	int sock;
-	int on = 1;
 	struct sockaddr_un saddru;
 
 	memset (&saddru, 0, sizeof (saddru));
@@ -91,9 +90,6 @@ create_lisp_cmd_socket (void)
 
 	if ((sock = socket (AF_UNIX, SOCK_STREAM, 0)) < 0)
 		err (EXIT_FAILURE, "can not create unix socket");
-
-	if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) != 0)
-		err (EXIT_FAILURE, "can not set REUSEADDR to unix socket");
 
 	if (bind (sock, (struct sockaddr *)&saddru, sizeof (saddru)) < 0)
 		error_quit ("can not bind unix socket : %s", strerror (errno));
@@ -117,7 +113,6 @@ main (int argc, char * argv[])
 	lisp.raw4_socket = create_lisp_raw_socket (AF_INET);
 	lisp.raw6_socket = create_lisp_raw_socket (AF_INET6);
 
-
 	lisp.eid_tuple = create_list ();
 	lisp.loc_tuple = create_list ();
 
@@ -125,7 +120,6 @@ main (int argc, char * argv[])
 	lisp.ctl_message = install_control_message ();
 
 	lisp.rib = create_maptable ();
-	lisp.fib = create_maptable ();
 	
 	start_lisp_thread (&(lisp.process_map_register_t), lisp_map_register_thread);
 	start_lisp_thread (&(lisp.process_map_reply_t), lisp_map_reply_thread);

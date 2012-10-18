@@ -51,6 +51,8 @@ enum return_type {
  *      lixyctl show      eid            [eid name]
  *      lixyctl show      map-server
  *
+ *	lixyctl route     [dst prefix]   [ITR|delete]
+ *
  */
 
 #define INIT_CMD_MAX_LEN 16

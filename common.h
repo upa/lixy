@@ -46,8 +46,7 @@ struct lisp {
 	list_t * loc_tuple;			/* locator address list 	*/
 	struct sockaddr_storage mapsrvaddr;	/* Map Server Address		*/
 	
-	struct maptable * rib;			/* For processing caches	*/
-	struct maptable * fib;			/* For lookup to forward packet */
+	struct maptable * rib;			/* Map Table			*/
 
 	list_t * cmd_tuple;	/* configuration command list */
 	char ** ctl_message;	/* return message to control */

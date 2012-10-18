@@ -284,13 +284,13 @@ eid_forwarding_thread (void * param)
 		case AF_INET :
 			ip = (struct ip *) (buf + sizeof (struct ether_header));
 			ADDRTOPREFIX (AF_INET, ip->ip_dst, 32, &dst_prefix);
-			mn = search_mapnode (lisp.fib, &dst_prefix);
+			mn = search_mapnode (lisp.rib, &dst_prefix);
 			break;
 
 		case AF_INET6 :
 			ip6 = (struct ip6_hdr *)(buf + sizeof (struct ether_header));
 			ADDRTOPREFIX (AF_INET6, ip6->ip6_dst, 128, &dst_prefix);
-			mn = search_mapnode (lisp.fib, &dst_prefix);
+			mn = search_mapnode (lisp.rib, &dst_prefix);
 			break;
 
 		default :
@@ -300,13 +300,12 @@ eid_forwarding_thread (void * param)
 		if (mn == NULL) {
 			/* Send Map Request */
 			install_mapnode_queried (lisp.rib, &dst_prefix);
-			install_mapnode_queried (lisp.fib, &dst_prefix);
 			send_map_request (&dst_prefix);
 			continue;
 		} 
 
 		if (mn->state == MAPSTATE_NEGATIVE || 
-		    mn->state == MAPSTATE_QUERIED {
+		    mn->state == MAPSTATE_QUERIED) {
 			/* native forwarding */
 			switch (ntohs (ehdr->ether_type)) {
 			case AF_INET : 

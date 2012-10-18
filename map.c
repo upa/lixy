@@ -369,8 +369,8 @@ process_lisp_map_reply_record_loc_is_zero (struct lisp_record * rec)
 
 	case LISP_MAPREPLY_ACT_NATIVE :
 		mn->state = MAPSTATE_NEGATIVE;
-		update_mapnode (lisp.rib, &prefix, mn);
-		update_mapnode (lisp.fib, &prefix, mn);
+		if (update_mapnode (lisp.rib, &prefix, mn) == NULL)
+			free (mn);
 		break;
 
 	case LISP_MAPREPLY_ACT_SENDREQ :
@@ -379,8 +379,8 @@ process_lisp_map_reply_record_loc_is_zero (struct lisp_record * rec)
 
 	case LISP_MAPREPLY_ACT_DROP :
 		mn->state = MAPSTATE_DROP;
-		update_mapnode (lisp.rib, &prefix, mn);
-		update_mapnode (lisp.fib, &prefix, mn);
+		if (update_mapnode (lisp.rib, &prefix, mn) == NULL)
+			free (mn);
 		break;
 
 	default :
@@ -451,8 +451,8 @@ process_lisp_map_reply (char * pkt)
 		mn->timer = MAPTIMER_DEFAULT;
 		mn->locator = lisp_locator_pkt_to_locator (lisploc);
 		mn->addr = mn->locator.loc_addr;
-		update_mapnode (lisp.rib, &prefix, mn);
-		update_mapnode (lisp.fib, &prefix, mn);
+		if (update_mapnode (lisp.rib, &prefix, mn) == NULL)
+			free (mn);
 	}
 	
 	return 0;
