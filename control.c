@@ -284,6 +284,8 @@ cmd_create_locator (char ** args)
 	struct locator loc;
 	struct addrinfo hints, * res;
 	
+	memset (&loc, 0, sizeof (loc));
+
 	memset (&hints, 0, sizeof (hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
@@ -565,6 +567,9 @@ cmd_set_eid_prefix (char ** args)
 	struct addrinfo hints, * res;
 	struct eid * eid;
 
+	if (args[1] == NULL || args[3] == NULL)
+		return ERR_INVALID_COMMAND;
+
 	if ((eid = search_eid (eid_name)) == NULL)
 		return ERR_EID_DOES_NOT_EXISTS;
 
@@ -607,8 +612,10 @@ cmd_set_eid_prefix (char ** args)
 enum return_type 
 cmd_unset_eid_prefix (char ** args)
 {
+	char * c;
 	char * eid_name = args[1];
 	char * c_prefix = args[3];
+	char addrbuf[ADDRBUFLEN];
 	prefix_t * prefix, * pprefix;
 	struct addrinfo hints, * res;
 	struct eid * eid;
@@ -619,12 +626,17 @@ cmd_unset_eid_prefix (char ** args)
 	if ((eid = search_eid (eid_name)) == NULL)
 		return ERR_EID_DOES_NOT_EXISTS;
 
+	memcpy (addrbuf, c_prefix, strlen (c_prefix) + 1);
+	for (c = addrbuf; *c != '/' && *c != '\0'; c++);
+	if (*c == '\0') return ERR_INVALID_ADDRESS;
+	*c = '\0';
+
 	memset (&hints, 0, sizeof (hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
 	
-	if (getaddrinfo (c_prefix, LISP_CONTROL_CPORT, &hints, &res) != 0)
+	if (getaddrinfo (addrbuf, LISP_CONTROL_CPORT, &hints, &res) != 0)
 		return ERR_INVALID_ADDRESS;
 
 	switch (res->ai_family) {

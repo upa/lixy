@@ -52,6 +52,26 @@
         } while (0)                                                     \
  
 
+#define PRINT_INADDR(af, ptr, desc) \
+        do {                                                            \
+		char __addrbuf[128] = "";				\
+		switch ((af)) {						\
+		case AF_INET6 :                                         \
+			inet_ntop (AF_INET6, ptr,			\
+				   __addrbuf, sizeof (__addrbuf));	\
+			printf ("%s %s\n", desc, __addrbuf);		\
+			break;                                          \
+		case AF_INET :                                          \
+			inet_ntop (AF_INET, ptr,			\
+				   __addrbuf, sizeof (__addrbuf));	\
+			printf ("%s %s\n", desc, __addrbuf);		\
+			break;                                          \
+		default :                                               \
+			printf ("%s invalid family %d\n", desc, af);	\
+		}                                                       \
+        } while (0)                                                     \
+	
+
 #define PRINT_ADDR(desc, sa)                                            \
         do {                                                            \
 		char addrbuf[128] = "";                                 \
@@ -108,13 +128,13 @@
 			  ((struct sockaddr_in6 *)sa62)->sin6_addr)
 
 #define COMPARE_SADDR_IN(in1, in2)              \
-        ((in1).s_addr == (in2).s_addr) ? 1 : -1
+        ((in1).s_addr == (in2).s_addr) ? 1 : 0
 
 #define COMPARE_SADDR_IN6(in61, in62)                           \
-        ((in61).s6_addr32[0] != (in62).s6_addr32[0]) ? -1 :         \
-        ((in61).s6_addr32[1] != (in62).s6_addr32[1]) ? -1 :         \
-        ((in61).s6_addr32[2] != (in62).s6_addr32[2]) ? -1 :         \
-        ((in61).s6_addr32[3] != (in62).s6_addr32[3]) ? -1 : 1       \
+        ((in61).s6_addr32[0] != (in62).s6_addr32[0]) ? 0 :         \
+        ((in61).s6_addr32[1] != (in62).s6_addr32[1]) ? 0 :         \
+        ((in61).s6_addr32[2] != (in62).s6_addr32[2]) ? 0 :         \
+        ((in61).s6_addr32[3] != (in62).s6_addr32[3]) ? 0 : 1       \
 
 #define COMPARE_INET6_PREFIX(a, b)					\
         (a.s6_addr32[0] == b.s6_addr32[0] && a.s6_addr32[1] == b.s6_addr32[1])

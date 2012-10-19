@@ -15,6 +15,7 @@
 
 #define EXTRACT_LISPAFI(sa) \
 	((EXTRACT_FAMILY (sa) == AF_INET) ? LISP_AFI_IPV4 : LISP_AFI_IPV6)
+
 #define AF_TO_LISPAFI(af) \
 	((af == AF_INET) ? LISP_AFI_IPV4 : LISP_AFI_IPV6)
 
@@ -276,7 +277,6 @@ set_lisp_map_register (char * buf, int len, prefix_t * prefix, struct eid * eid)
 	struct lisp_locator * loc;
 	struct lisp_map_register * reg;
 
-
 	/* Set Register header */
 	pktlen += sizeof (struct lisp_map_register);
 	reg = (struct lisp_map_register *) buf;
@@ -308,13 +308,14 @@ set_lisp_map_register (char * buf, int len, prefix_t * prefix, struct eid * eid)
 		break;
 	}
 
+
 	/* Set Locator */
 
 	MYLIST_FOREACH (lisp.loc_tuple, li) {
 		tmploc = (struct locator *) (li->data);
 
-		pktlen += sizeof (struct lisp_locator);
 		loc = (struct lisp_locator *) (buf + pktlen);
+		pktlen += sizeof (struct lisp_locator);
 		memset (loc, 0, sizeof (struct lisp_locator));
 		loc->priority = tmploc->priority;
 		loc->weight = tmploc->weight;
@@ -322,9 +323,9 @@ set_lisp_map_register (char * buf, int len, prefix_t * prefix, struct eid * eid)
 		loc->m_weight = tmploc->m_weight;
 		loc->R_flag = 1;
 		loc->L_flag = 1;
-		loc->afi = htons (EXTRACT_LISPAFI (tmploc->loc_addr));
+		loc->afi = htons (AF_TO_LISPAFI (EXTRACT_FAMILY (tmploc->loc_addr)));
 	
-		ptr = (char *) (loc + 1);
+		ptr = buf + pktlen;
 		switch (EXTRACT_FAMILY (tmploc->loc_addr)) {
 		case AF_INET :
 			pktlen += sizeof (struct in_addr);
@@ -336,6 +337,10 @@ set_lisp_map_register (char * buf, int len, prefix_t * prefix, struct eid * eid)
 			memcpy (ptr, &(EXTRACT_IN6ADDR (tmploc->loc_addr)), 
 				sizeof (struct in6_addr));
 			break;
+		default :
+			error_warn ("%s: unknown family locator %d", 
+				    EXTRACT_FAMILY (tmploc->loc_addr));
+			return -1;
 		}
 	}
 			  

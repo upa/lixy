@@ -293,13 +293,13 @@ eid_forwarding_thread (void * param)
 
 		ehdr = (struct ether_header *) buf;		
 		switch (ntohs (ehdr->ether_type)) {
-		case AF_INET :
+		case ETH_P_IP :
 			ip = (struct ip *) (buf + sizeof (struct ether_header));
 			ADDRTOPREFIX (AF_INET, ip->ip_dst, 32, &dst_prefix);
 			mn = search_mapnode (lisp.rib, &dst_prefix);
 			break;
 
-		case AF_INET6 :
+		case ETH_P_IPV6 :
 			ip6 = (struct ip6_hdr *)(buf + sizeof (struct ether_header));
 			ADDRTOPREFIX (AF_INET6, ip6->ip6_dst, 128, &dst_prefix);
 			mn = search_mapnode (lisp.rib, &dst_prefix);

@@ -66,4 +66,7 @@ extern struct lisp lisp;
 #define UNIX_PATH_MAX 104
 #endif
 
+
 #endif /* _COMMON_H_ */
+
+

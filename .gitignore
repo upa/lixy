@@ -7,3 +7,5 @@ lixyctl
 test-map-req
 test-map-reg
 *.dSYM
+
+hoge*
