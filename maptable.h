@@ -12,8 +12,8 @@ struct maptable {
 };
 
 struct mapnode {
+	int ttl;
 	u_int8_t state;
-	u_int8_t ttl;
 	struct sockaddr_storage addr;
 	struct locator locator;
 };
@@ -22,6 +22,7 @@ struct mapnode {
 #define MAPTABLE_TREE_HEAD(MT) (MT)->tree->head
 
 #define MAPTTL_DEFAULT		60	/* 1min */
+#define MAPTTL_CHECK_INTERVAL	10	/* sec  */
 
 /* Map Cache States */
 #define MAPSTATE_ACTIVE		0
@@ -59,6 +60,8 @@ void install_mapnode_static (struct maptable * table, prefix_t * prefix,
 /* return value : 0 is sucess, -1 is faield */
 int uninstall_mapnode_static (struct maptable * table, prefix_t * prefix);
 
+/* process maptable thread. it decrease ttl and release cache */
+void * lisp_maptable_thread (void * param);
 
 
 /* Macros */

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "maptable.h"
 #include "sockaddrmacro.h"
@@ -123,4 +124,30 @@ uninstall_mapnode_static (struct maptable * table, prefix_t * prefix)
 	free (mn);
 
 	return 0;
+}
+
+void *
+lisp_maptable_thread (void * param)
+{
+	patricia_node_t * pn;
+	struct mapnode * mn;
+	
+	while (1) {
+		
+		PATRICIA_WALK (MAPTABLE_TREE_HEAD (lisp.rib), pn) {
+			mn = (struct mapnode *) (pn->data);
+
+			if (mn->state == MAPSTATE_STATIC) 
+				PATRICIA_WALK_BREAK;
+
+			mn->ttl -= MAPTTL_CHECK_INTERVAL;
+			if (mn->ttl <= 0) {
+				delete_mapnode (lisp.rib, pn->prefix);
+			}
+		} PATRICIA_WALK_END;
+
+		sleep (MAPTTL_CHECK_INTERVAL);
+	} 
+
+	return NULL;
 }

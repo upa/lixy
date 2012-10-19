@@ -124,7 +124,9 @@ main (int argc, char * argv[])
 	
 	start_lisp_thread (&(lisp.process_map_register_t), lisp_map_register_thread);
 	start_lisp_thread (&(lisp.process_map_reply_t), lisp_map_reply_thread);
+	start_lisp_thread (&(lisp.process_maptable_t), lisp_maptable_thread);
 	start_lisp_thread (&(lisp.lisp_dp_t), lisp_dp_thread);
+
 
 	lisp_op_thread (NULL);
 

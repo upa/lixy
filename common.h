@@ -54,6 +54,7 @@ struct lisp {
 
 	pthread_t process_map_register_t;
 	pthread_t process_map_reply_t;
+	pthread_t process_maptable_t;
 	pthread_t lisp_dp_t;
 	pthread_t lisp_op_t;
 };

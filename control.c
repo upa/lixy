@@ -717,19 +717,19 @@ cmd_show_route (int af, int socket, char ** args)
 	if (type == NULL) 
 		state = -1;
 
-	else if (strcmp (type, "active")) 
+	else if (strcmp (type, "active") == 0)  
 		state = MAPSTATE_ACTIVE;
 	
-	else if (strcmp (type, "negative")) 
+	else if (strcmp (type, "negative") == 0) 
 		state = MAPSTATE_NEGATIVE;
 	
-	else if (strcmp (type, "drop")) 
+	else if (strcmp (type, "drop") == 0)
 		state = MAPSTATE_DROP;
 	
-	else if (strcmp (type, "queried")) 
+	else if (strcmp (type, "queried") == 0)
 		state = MAPSTATE_QUERIED;
 
-	else if (strcmp (type, "static")) 
+	else if (strcmp (type, "static") == 0)
 		state = MAPSTATE_STATIC;
 
 
