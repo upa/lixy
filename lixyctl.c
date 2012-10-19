@@ -62,6 +62,7 @@ create_unix_client_socket (char * domain)
 int
 main (int argc, char * argv[])
 {
+	FILE * fp, * fpout;
 	int n, sock;
 	char buf[CONTROL_MSG_BUF_LEN];
 	char cmdstr[CONTROL_MSG_BUF_LEN];
@@ -78,9 +79,13 @@ main (int argc, char * argv[])
 			usage ();
 			return 0;
 		}
+		if (strcmp (argv[1], "--help") == 0) {
+			usage ();
+			return 0;
+		}
 	}
 
-	for (n = 1; n < argc; n++){
+	for (n = 1; n < argc; n++) {
 		if (snprintf (cmdbuf, sizeof (cmdbuf), 
 			      "%s %s", cmdstr, argv[n]) > CONTROL_MSG_BUF_LEN)
 			error_quit ("command string is too long");
@@ -88,7 +93,22 @@ main (int argc, char * argv[])
 	}
 
 	sock = create_unix_client_socket (LISP_UNIX_DOMAIN);
+	fp = fdopen (sock, "r+");
+	fpout = fdopen (STDOUT_FILENO, "w");
 	
+	if (fputs (cmdstr, fp) == EOF) {
+		perror ("fputs");
+		fclose (fp);
+	}
+
+	while (fgets (buf, sizeof (cmdstr), fp) != NULL) {
+		printf ("%s", buf);
+	}
+	
+	fclose (fp);
+	fclose (fpout);
+
+#if 0
 	if (write (sock, cmdstr, strlen (cmdstr)) < 0) {
 		perror ("write");
 		shutdown (sock, SHUT_RDWR);
@@ -98,6 +118,7 @@ main (int argc, char * argv[])
 	while (read (sock, buf, sizeof (buf))) {
 		printf ("%s", buf);
 	}
+#endif
 
 	return 0;
 }

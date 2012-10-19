@@ -13,8 +13,17 @@
 #include "error.h"
 #include "maptable.h"
 
+#if 0
+#define WRITE_SOCKET(SOCK, STR) write ((SOCK), (STR), sizeof (buf))
+#endif
 
-#define WRITE_SOCKET(sock, str) write (sock, str, strlen (str) + 1)
+#define WRITE_SOCKET(sock, str)			\
+	do {					\
+		FILE * fp;			\
+		fp = fdopen (sock, "w+");	\
+		fputs (str, fp);		\
+		fflush (fp);			\
+	} while (0)
 
 int
 strsplit (char * str, char ** argv, int maxnum)
@@ -139,6 +148,9 @@ compare_cmd_node (void * pa, void * pb)
 struct cmd_node *
 search_cmd_node (list_t * cmd_tuple, char * cmd)
 {
+	if (cmd == NULL)
+		return NULL;
+
 	return search_listnode (cmd_tuple, cmd, compare_cmd_node);
 }
 
@@ -166,7 +178,6 @@ lisp_op_thread (void * param)
 		/* read commands */
 		if (read (accept_socket, buf, sizeof (buf)) < 0) {
 			error_warn ("%s: read(2) control socket failed", __func__);
-			shutdown (accept_socket, 1);
 			close (accept_socket);
 			continue;
 		}
@@ -175,7 +186,6 @@ lisp_op_thread (void * param)
 		if (strsplit (buf, args, CONTROL_ARGS_MAX) < 0) {
 			error_warn ("%s: parse command failed", __func__);
 			WRITE_CONTROL_MSG (accept_socket, ERR_INVALID_COMMAND);
-			shutdown (accept_socket, 1);
 			close (accept_socket);
 			continue;
 		}
@@ -184,15 +194,14 @@ lisp_op_thread (void * param)
 		if ((cnode = search_cmd_node (lisp.cmd_tuple, args[0])) == NULL) {
 			error_warn ("%s: invalid command %s", __func__, args[0]);
 			WRITE_CONTROL_MSG (accept_socket, ERR_INVALID_COMMAND);
-			shutdown (accept_socket, 1);
 			close (accept_socket);
 			continue;
 		}
 			
 		/* exec command and write message */
 		res = cnode->func (accept_socket, args);
-		WRITE_CONTROL_MSG (accept_socket, res);
-		shutdown (accept_socket, 1);
+		if (res != SUCCESS_NO_MESSAGE)
+			WRITE_CONTROL_MSG (accept_socket, res);
 		close (accept_socket);
 	}
 
@@ -744,12 +753,15 @@ cmd_show_route (int af, int socket, char ** args)
 			case AF_INET6 :
 				inet_ntop (AF_INET6, &(EXTRACT_IN6ADDR (mn->addr)), 
 					   addrbuf2, sizeof (addrbuf2));
-				break;
+				break;	
+			default :
+				error_warn ("%s: invalid family in mapnode", __func__);
 			}
 			
 			snprintf (buf, sizeof (buf), "%s/%d %s %s\n", 
 				  addrbuf1, pn->prefix->bitlen, addrbuf2, 
 				  mapstate_string[mn->state]);
+			printf ("%s", buf);
 			WRITE_SOCKET (socket, buf);
 		} 
 	} PATRICIA_WALK_END;
@@ -790,8 +802,7 @@ cmd_write_eid (int socket, struct eid * eid)
 
 	printf ("%s", resbuf);
 
-	if (WRITE_SOCKET (socket, resbuf) < 0)
-		error_warn ("%s : write to cmd socket failed", __func__);
+	WRITE_SOCKET (socket, resbuf);
 
 	return;
 }

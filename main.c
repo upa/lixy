@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/un.h>
+#include <netinet/tcp.h>
 
 #include "common.h"
 #include "error.h"
