@@ -5,7 +5,7 @@ CC = gcc -Wall -g
 MODULES = error.o instance.o map.o maptable.o control.o
 PATRICIA = patricia
 LIST = list
-PROGNAME = lixy
+PROGNAME = lixyd lixyctl
 
 .PHONY: all
 all: $(PROGNAME)
@@ -23,9 +23,12 @@ list: $(LIST)/list.h $(LIST)/list.c
 	cd $(LIST)
 	gcc -c list.c list.o
 
-lixy: main.c $(MODULES) $(PATRICIA)/patricia.o $(LIST)/list.o
+lixyd: main.c $(MODULES) $(PATRICIA)/patricia.o $(LIST)/list.o
 	$(CC) main.c -lcrypto -lpthread $(MODULES) \
-	$(PATRICIA)/patricia.o $(LIST)/list.o -o lixy
+	$(PATRICIA)/patricia.o $(LIST)/list.o -o lixyd
+
+lixyctl: lixyctl.c common.h control.h error.o
+	$(CC) lixyctl.c error.o -o lixyctl
 
 clean : 
 	rm $(MODULES) $(PATRICIA)/patricia.o $(LIST)/list.o $(PROGNAME)

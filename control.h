@@ -51,7 +51,7 @@ enum return_type {
  *      lixyctl show      eid            [eid name]
  *      lixyctl show      map-server
  *
- *	lixyctl route     [dst prefix]   [ITR|delete]
+ *	lixyctl route     [ipv4|ipv6]    [dst prefix]   [ITR|delete]
  *
  */
 

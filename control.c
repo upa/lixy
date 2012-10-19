@@ -137,7 +137,7 @@ lisp_op_thread (void * param)
 {
 	/* Process control command */
 
-	int n, accept_socket;
+	int n, res, accept_socket;
 	char buf[CONTROL_MSG_BUF_LEN];
 	char * args[CONTROL_ARGS_MAX];
 	struct cmd_node * cnode;
@@ -152,6 +152,7 @@ lisp_op_thread (void * param)
 
 		accept_socket = accept (lisp.cmd_socket, NULL, 0);
 
+		/* read commands */
 		if (read (accept_socket, buf, sizeof (buf)) < 0) {
 			error_warn ("%s: read(2) control socket failed", __func__);
 			shutdown (accept_socket, 1);
@@ -159,6 +160,7 @@ lisp_op_thread (void * param)
 			continue;
 		}
 		
+		/* split commands */
 		if (strsplit (buf, args, CONTROL_ARGS_MAX) < 0) {
 			error_warn ("%s: parse command failed", __func__);
 			WRITE_CONTROL_MSG (accept_socket, ERR_INVALID_COMMAND);
@@ -167,6 +169,7 @@ lisp_op_thread (void * param)
 			continue;
 		}
 		
+		/* search command from cmd_node tuple */
 		if ((cnode = search_cmd_node (lisp.cmd_tuple, args[0])) == NULL) {
 			error_warn ("%s: invalid command %s", __func__, args[0]);
 			WRITE_CONTROL_MSG (accept_socket, ERR_INVALID_COMMAND);
@@ -175,8 +178,9 @@ lisp_op_thread (void * param)
 			continue;
 		}
 			
-		n = cnode->func (accept_socket, args);
-		WRITE_CONTROL_MSG (accept_socket, n);
+		/* exec command and write message */
+		res = cnode->func (accept_socket, args);
+		WRITE_CONTROL_MSG (accept_socket, res);
 		shutdown (accept_socket, 1);
 		close (accept_socket);
 	}
@@ -837,7 +841,7 @@ config_show (int socket, char ** args)
 enum return_type
 config_route (int socket, char ** args)
 {
-	char * action = args[2];
+	char * action = args[3];
 
 	if (strcmp (action, "delete") == 0) {
 		return cmd_delete_route (args);
@@ -849,8 +853,71 @@ config_route (int socket, char ** args)
 }
 
 
+
 enum return_type
-cmd_delete_route (args)
+cmd_install_route (char ** args)
 {
+	int af;
+	char * c_af = args[1];
+	char * c_dst_prefix = args[2];
+	char * c_loc_addr = args[3];
+	prefix_t * dst_prefix;
+	struct sockaddr_storage sastr;
+	struct addrinfo hints, * res;
+
+	/* validate AI FAMILY */
+	if (strcmp (c_af, "ipv4") == 0) {
+		af = AF_INET;
+	} else if (strcmp (c_af, "ipv6") == 0) {
+		af = AF_INET6;
+	} else {
+		return ERR_INVALID_COMMAND;
+	}
 	
+	/* validate destinatin prefix */
+	if ((dst_prefix = ascii2prefix (af, c_dst_prefix)) == NULL)
+		return ERR_INVALID_ADDRESS;
+
+	/* validate locator address */
+	memset (&hints, 0, sizeof (hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_protocol = IPPROTO_UDP;
+
+	if (getaddrinfo (c_loc_addr, LISP_DATA_CPORT, &hints, &res) != 0) {
+		free (dst_prefix);
+		return ERR_INVALID_ADDRESS;
+	}
+
+	install_mapnode_static (lisp.rib, dst_prefix, *(res->ai_addr));
+
+	return SUCCESS;
 }
+
+
+enum return_type
+cmd_delete_route (char ** args)
+{
+	int af;
+	char * c_af = args[1];
+	char * c_dst_prefix = args[2];
+
+	/* validate AI FAMILY */
+	if (strcmp (c_af, "ipv4") == 0) {
+		af = AF_INET;
+	} else if (strcmp (c_af, "ipv6") == 0) {
+		af = AF_INET6;
+	} else {
+		return ERR_INVALID_COMMAND;
+	}
+	
+	/* validate destinatin prefix */
+	if ((dst_prefix = ascii2prefix (af, c_dst_prefix)) == NULL)
+		return ERR_INVALID_ADDRESS;
+	
+	if (uninstall_mapnode_static (lisp.rib, dst_prefix) < 0)
+		return ERR_FAILED;
+	
+	return SUCCESS;
+}
+
