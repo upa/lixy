@@ -15,6 +15,7 @@
 #define LISP_MAP_REGISTER_INTERVAL	10
 #define LISP_EID_NAME_LEN		16
 
+#define ADDRBUFLEN 56
 
 struct locator {
 	struct sockaddr_storage loc_addr;

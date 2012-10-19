@@ -20,7 +20,7 @@ int start_eid_forwarding_thread (struct eid * eid);
 void * eid_forwarding_thread (void * param);
 
 		
-#define IS_EID_THREAD_RUNNING(eid) ((eid)->t_flag)
+#define IS_EID_THREAD_RUNNING(eid) ((eid)->t_flag > 0)
 
 #define STOP_EID_THREAD(eid)					\
 	do {							\
@@ -28,7 +28,7 @@ void * eid_forwarding_thread (void * param);
 			if (pthread_cancel ((eid)->tid) == 0)	\
 				(eid)->t_flag = -1;		\
 			else					\
-				error_warn ("faild to stop"	\
+				error_warn ("faild to stop "	\
 					    "eid \"%s\"",	\
 					    eid->name);		\
 		}						\
@@ -38,9 +38,12 @@ void * eid_forwarding_thread (void * param);
 #define START_EID_THREAD(eid)						\
 	do {								\
 		if (!IS_EID_THREAD_RUNNING ((eid))) {			\
-			if (start_eid_forwarding_thread ((eid)))	\
+			if (start_eid_forwarding_thread ((eid)) > 0)	\
 				(eid)->t_flag = 1;			\
-		}							\
+			else						\
+				error_warn ("%s: start thread failed",	\
+					    __func__);			\
+		} 							\
 	} while (0)
 
 
@@ -53,21 +56,23 @@ create_raw_socket (char * ifname)
 	struct sockaddr_ll saddr_ll;
 	
 	if ((ifindex = if_nametoindex (ifname)) < 1) {
-		error_warn ("interface \"%s\" is does not exits", ifname);
+		error_warn ("%s: interface \"%s\" is does not exits", __func__, ifname);
 		return -1;
 	}
 
 	if ((sock = socket (AF_PACKET, SOCK_RAW, htons (ETH_P_ALL))) < 0) {
-		error_warn ("can not create raw socket for \"%s\"", ifname);
+		error_warn ("%s: can not create raw socket for \"%s\"", __func__, ifname);
 		return -1;
 	}
 	
 	memset (&saddr_ll, 0, sizeof (saddr_ll));
+	saddr_ll.sll_family = AF_PACKET;
 	saddr_ll.sll_protocol = htons (ETH_P_ALL);
 	saddr_ll.sll_ifindex = ifindex;
 
 	if (bind (sock, (struct sockaddr *)&saddr_ll, sizeof (saddr_ll)) < 0){
-		error_warn ("can not bind raw socket to \"%s\"", ifname);
+		error_warn ("%s: can not bind raw socket to \"%s\" : %s", 
+			    __func__, ifname, strerror (errno));
 		return -1;
 	}
 #endif
@@ -232,16 +237,23 @@ start_eid_forwarding_thread (struct eid * eid)
 	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
 	
 	/* check interface */
-	if (if_nametoindex (eid->ifname) < 1) 
+	if (if_nametoindex (eid->ifname) < 1) {
+		error_warn ("%s: EID \"%s\", interface \"%s\" does not exists",
+			    eid->name, eid->ifname);
 		return -1;
+	}
 
 	/* check socket */
-	if (eid->raw_socket < 1) 
+	if (eid->raw_socket < 0) {
+		error_warn ("%s: EID \"%s\", interface \"%s\" invalid raw socket",
+			    eid->name, eid->ifname);
 		return -1;
+	}
 
+	error_warn ("%s: start forwarding thread for EID \"%s\"", __func__, eid->name);
 	pthread_create (&(eid->tid), &attr, eid_forwarding_thread, eid);
 
-	return 0;
+	return 1;
 }
 
 void *
@@ -299,7 +311,10 @@ eid_forwarding_thread (void * param)
 
 		if (mn == NULL) {
 			/* Send Map Request */
-			install_mapnode_queried (lisp.rib, &dst_prefix);
+			prefix_t * i_prefix;
+			i_prefix = (prefix_t *) malloc (sizeof (prefix_t));
+			* i_prefix = dst_prefix;
+			install_mapnode_queried (lisp.rib, i_prefix);
 			send_map_request (&dst_prefix);
 			continue;
 		} 

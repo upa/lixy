@@ -99,7 +99,7 @@ install_mapnode_static (struct maptable * table, prefix_t * prefix,
 	memset (mn, 0, sizeof (struct mapnode));
 
 	mn->state = MAPSTATE_STATIC;
-	mn->timer = MAPTIMER_DEFAULT;
+	mn->ttl = 0;
 	mn->addr = addr;
 
 	if (update_mapnode (table, prefix, mn) == NULL)

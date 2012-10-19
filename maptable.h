@@ -13,7 +13,7 @@ struct maptable {
 
 struct mapnode {
 	u_int8_t state;
-	u_int8_t timer;
+	u_int8_t ttl;
 	struct sockaddr_storage addr;
 	struct locator locator;
 };
@@ -21,7 +21,7 @@ struct mapnode {
 #define MAPTALBE_TREE(MT) (MT)->tree
 #define MAPTABLE_TREE_HEAD(MT) (MT)->tree->head
 
-#define MAPTIMER_DEFAULT	60	/* 1min */
+#define MAPTTL_DEFAULT		60	/* 1min */
 
 /* Map Cache States */
 #define MAPSTATE_ACTIVE		0
@@ -50,7 +50,7 @@ struct mapnode * update_mapnode (struct maptable * table, prefix_t * prefix,
 struct mapnode * delete_mapnode (struct maptable * table, prefix_t * prefix);
 struct mapnode * search_mapnode (struct maptable * table, prefix_t * prefix);
 
-inline void install_mapnode_queried (struct maptable * table, prefix_t * prefix);
+void install_mapnode_queried (struct maptable * table, prefix_t * prefix);
 
 
 void install_mapnode_static (struct maptable * table, prefix_t * prefix, 

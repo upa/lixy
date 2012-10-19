@@ -1,7 +1,8 @@
 *a.out*
 *.o
 
-lixy
+lixyd
+lixyctl
 
 test-map-req
 test-map-reg

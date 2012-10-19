@@ -6,11 +6,13 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#include "lisp.h"
 #include "control.h"
 #include "instance.h"
 #include "sockaddrmacro.h"
 #include "error.h"
 #include "maptable.h"
+
 
 #define WRITE_SOCKET(sock, str) write (sock, str, strlen (str) + 1)
 
@@ -19,7 +21,7 @@ strsplit (char * str, char ** argv, int maxnum)
 {
         int argc;
         char * c;
-
+	
         for (argc = 0, c = str; *c == ' '; c++);
         while (*c && argc < maxnum) {
                 argv[argc++] = c;
@@ -40,7 +42,7 @@ install_cmd_node (void)
 	list_t * cmd_tuple;
 	
 	cmd_tuple = create_list ();
-
+	
 	/* install map server configuration node */
 	struct cmd_node * map;
 	map = (struct cmd_node *) malloc (sizeof (struct cmd_node));
@@ -49,7 +51,7 @@ install_cmd_node (void)
 	strncpy (map->init_cmd, "mapserver", INIT_CMD_MAX_LEN);
 	map->func = config_map_server;
 	append_listnode (cmd_tuple, map);
-
+	
 	/* install locator configuration node */
 	struct cmd_node * loc;
 	loc = (struct cmd_node *) malloc (sizeof (struct cmd_node));
@@ -58,7 +60,7 @@ install_cmd_node (void)
 	strncpy (loc->init_cmd, "locator", INIT_CMD_MAX_LEN);
 	loc->func = config_locator;
 	append_listnode (cmd_tuple, loc);
-
+	
 	/* install EID configuration node */
 	struct cmd_node * eid;
 	eid = (struct cmd_node *) malloc (sizeof (struct cmd_node));
@@ -67,18 +69,27 @@ install_cmd_node (void)
 	strncpy (eid->init_cmd, "eid", INIT_CMD_MAX_LEN);
 	eid->func = config_eid;
 	append_listnode (cmd_tuple, eid);
-
+	
 	/* install show command node */
 	struct cmd_node * show;
 	show = (struct cmd_node *) malloc (sizeof (struct cmd_node));
 	memset (show, 0, sizeof (struct cmd_node));
 	show->depth = 1;
-	strncpy (eid->init_cmd, "show", INIT_CMD_MAX_LEN);
+	strncpy (show->init_cmd, "show", INIT_CMD_MAX_LEN);
 	show->func = config_show;
 	append_listnode (cmd_tuple, show);
+	
+	/* install route command node */
+	struct cmd_node * route;
+	route = (struct cmd_node *) malloc (sizeof (struct cmd_node));
+	memset (route, 0, sizeof (struct cmd_node));
+	route->depth = 1;
+	strncpy (route->init_cmd, "route", INIT_CMD_MAX_LEN);
+	route->func = config_route;
+	append_listnode (cmd_tuple, route);
 
 	return cmd_tuple;
-}
+}	
 
 
 char **
@@ -98,20 +109,20 @@ install_control_message (void)
 #define SET_CONTROL_MSG(PTR, NUM, MSG)		\
 	strncpy ((PTR[(NUM)]), (MSG), CONTROL_MSG_MAX_LEN);
 
-	SET_CONTROL_MSG (ptr, SUCCESS, "success");
-	SET_CONTROL_MSG (ptr, SUCCESS_NO_MESSAGE, "");
-	SET_CONTROL_MSG (ptr, ERR_FAILED, "failed");
-	SET_CONTROL_MSG (ptr, ERR_INVALID_COMMAND, "invalid command");
-	SET_CONTROL_MSG (ptr, ERR_INVALID_ADDRESS, "invalid address");
-	SET_CONTROL_MSG (ptr, ERR_EID_EXISTS, "EID exists");
-	SET_CONTROL_MSG (ptr, ERR_LOCATOR_EXISTS, "Locator exists");
-	SET_CONTROL_MSG (ptr, ERR_INTERFACE_EXISTS, "Interface exists");
-	SET_CONTROL_MSG (ptr, ERR_ADDRESS_EXISTS, "Address exists");
-	SET_CONTROL_MSG (ptr, ERR_EID_DOES_NOT_EXISTS, "EID does not exists");
-	SET_CONTROL_MSG (ptr, ERR_LOCATOR_DOES_NOT_EXISTS, "Locator does not exists");
-	SET_CONTROL_MSG (ptr, ERR_INTERFACE_DOES_NOT_EXISTS, "Interface doesnot exists");
-	SET_CONTROL_MSG (ptr, ERR_ADDRESS_DOES_NOT_EXISTS, "Address does not exists");
-	SET_CONTROL_MSG (ptr, ERR_AUTHKEY_TOO_LONG, "authentication key is too long");
+	SET_CONTROL_MSG (ptr, SUCCESS, "success\n");
+	SET_CONTROL_MSG (ptr, SUCCESS_NO_MESSAGE, "\n");
+	SET_CONTROL_MSG (ptr, ERR_FAILED, "failed\n");
+	SET_CONTROL_MSG (ptr, ERR_INVALID_COMMAND, "invalid command\n");
+	SET_CONTROL_MSG (ptr, ERR_INVALID_ADDRESS, "invalid address\n");
+	SET_CONTROL_MSG (ptr, ERR_EID_EXISTS, "EID exists\n");
+	SET_CONTROL_MSG (ptr, ERR_LOCATOR_EXISTS, "Locator exists\n");
+	SET_CONTROL_MSG (ptr, ERR_INTERFACE_EXISTS, "Interface exists\n");
+	SET_CONTROL_MSG (ptr, ERR_ADDRESS_EXISTS, "Address exists\n");
+	SET_CONTROL_MSG (ptr, ERR_EID_DOES_NOT_EXISTS, "EID does not exists\n");
+	SET_CONTROL_MSG (ptr, ERR_LOCATOR_DOES_NOT_EXISTS, "Locator does not exists\n");
+	SET_CONTROL_MSG (ptr, ERR_INTERFACE_DOES_NOT_EXISTS, "Interface doesnot exists\n");
+	SET_CONTROL_MSG (ptr, ERR_ADDRESS_DOES_NOT_EXISTS, "Address does not exists\n");
+	SET_CONTROL_MSG (ptr, ERR_AUTHKEY_TOO_LONG, "authentication key is too long\n");
 	
 	return ptr;
 }
@@ -219,12 +230,11 @@ config_map_server (int socket, char ** args)
 {
 	char * action = args[2];
 
-	if (action != NULL) 
+	if (action == NULL) 
 		return cmd_set_map_server (args);
-	else if (strcmp (action, "delete") == 0) 
+
+	if (strcmp (action, "delete") == 0) 
 		return unset_lisp_mapserver ();
-	else 
-		return ERR_INVALID_COMMAND;
 
 	return ERR_INVALID_COMMAND;
 }
@@ -323,6 +333,9 @@ cmd_set_locator_paramater (char ** args)
 	struct addrinfo hints, * res;
 	struct sockaddr_storage loc_addr;
 
+	if (caddr == NULL || param == NULL || value == NULL) 
+		return ERR_INVALID_COMMAND;
+
 	memset (&hints, 0, sizeof (hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
@@ -358,14 +371,16 @@ cmd_set_locator_paramater (char ** args)
 enum return_type
 config_locator (int socket, char ** args)
 {
+	if (args[1] == NULL || args[2] == NULL)
+		return ERR_INVALID_COMMAND;
 
 	/* that is create locator */
-	if (args[2] == NULL) 
+	if (strcmp (args[2], "create") == 0)
 		return cmd_create_locator (args);
 
 
 	/* that is delete locator only */
-	if (strcmp (args[2], "delete") != 0) 
+	if (strcmp (args[2], "delete") == 0) 
 		return cmd_delete_locator (args);
 
 
@@ -432,8 +447,11 @@ enum return_type
 cmd_set_eid_interface (char ** args)
 {
 	char * eid_name = args[1];
-	char * ifname = args[2];
+	char * ifname = args[3];
 	struct eid * eid;
+
+	if (eid_name == NULL || ifname == NULL)
+		return ERR_INVALID_COMMAND;
 
 	if (if_nametoindex (ifname) == 0) 
 		return ERR_INTERFACE_DOES_NOT_EXISTS;
@@ -467,7 +485,7 @@ enum return_type
 cmd_set_eid_authentication_key (char ** args)
 {
 	char * eid_name = args[1];
-	char * key = args[2];
+	char * key = args[3];
 	struct eid * eid;
 
 	if ((eid = search_eid (eid_name)) == NULL)
@@ -533,6 +551,7 @@ cmd_set_eid_prefix (char ** args)
 {
 	char * eid_name = args[1];
 	char * c_prefix = args[3];
+	char * c, addrbuf[ADDRBUFLEN];
 	prefix_t * prefix;
 	struct addrinfo hints, * res;
 	struct eid * eid;
@@ -540,12 +559,17 @@ cmd_set_eid_prefix (char ** args)
 	if ((eid = search_eid (eid_name)) == NULL)
 		return ERR_EID_DOES_NOT_EXISTS;
 
+	memcpy (addrbuf, c_prefix, strlen (c_prefix) + 1);
+	for (c = addrbuf; *c != '/' && *c != '\0'; c++);
+	if (*c == '\0') return ERR_INVALID_ADDRESS;
+	*c = '\0';
+
 	memset (&hints, 0, sizeof (hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
 	
-	if (getaddrinfo (c_prefix, LISP_CONTROL_CPORT, &hints, &res) != 0)
+	if (getaddrinfo (addrbuf, LISP_CONTROL_CPORT, &hints, &res) != 0)
 		return ERR_INVALID_ADDRESS;
 
 	switch (res->ai_family) {
@@ -579,6 +603,9 @@ cmd_unset_eid_prefix (char ** args)
 	prefix_t * prefix, * pprefix;
 	struct addrinfo hints, * res;
 	struct eid * eid;
+
+	if (args[1] == NULL || args[2] == NULL || args[3] == NULL)
+		return ERR_INVALID_COMMAND;
 
 	if ((eid = search_eid (eid_name)) == NULL)
 		return ERR_EID_DOES_NOT_EXISTS;
@@ -627,6 +654,10 @@ config_eid (int socket, char ** args)
 {
 	char * action = args[2];
 	
+	if (args[1] == NULL || args[2] == NULL) 
+		return ERR_INVALID_COMMAND;
+
+
 	if (strcmp (action, "create") == 0) {
 		return cmd_create_eid (args);
 	}
@@ -640,6 +671,10 @@ config_eid (int socket, char ** args)
 	}
 
 	else if (strcmp (action, "interface") == 0) {
+		if (args[3] == NULL)
+			return ERR_INVALID_COMMAND;
+		if (strcmp (args[3], "delete") == 0)
+			return cmd_unset_eid_interface (args);
 		cmd_unset_eid_interface (args);
 		return cmd_set_eid_interface (args);
 	}
@@ -664,7 +699,7 @@ cmd_show_route (int af, int socket, char ** args)
 {
 	int state;
 	char * type = args[2];
-	char buf[CONTROL_MSG_BUF_LEN], addrbuf1[52], addrbuf2[52];
+	char buf[CONTROL_MSG_BUF_LEN], addrbuf1[ADDRBUFLEN], addrbuf2[ADDRBUFLEN];
 	char * mapstate_string[] = MAPSTATE_STRING_INIT ();
 	patricia_node_t * pn;
 	struct mapnode * mn;
@@ -687,7 +722,6 @@ cmd_show_route (int af, int socket, char ** args)
 
 	else if (strcmp (type, "static")) 
 		state = MAPSTATE_STATIC;
-
 
 
 	PATRICIA_WALK (MAPTABLE_TREE_HEAD (lisp.rib), pn) {
@@ -713,7 +747,6 @@ cmd_show_route (int af, int socket, char ** args)
 				break;
 			}
 			
-
 			snprintf (buf, sizeof (buf), "%s/%d %s %s\n", 
 				  addrbuf1, pn->prefix->bitlen, addrbuf2, 
 				  mapstate_string[mn->state]);
@@ -730,11 +763,13 @@ void
 cmd_write_eid (int socket, struct eid * eid)
 {
 	char buf[CONTROL_MSG_BUF_LEN];
-	char addrbuf[52];
+	char resbuf[CONTROL_MSG_BUF_LEN];
+	char addrbuf[ADDRBUFLEN];
 	listnode_t * ln;
 	prefix_t * prefix;
 
 	memset (buf, 0, sizeof (buf));
+	memset (resbuf, 0, sizeof (buf));
 
 	snprintf (buf, sizeof (buf), 
 		  "Name : %s\n"
@@ -746,12 +781,17 @@ cmd_write_eid (int socket, struct eid * eid)
 	MYLIST_FOREACH (eid->prefix_tuple, ln) {
 		prefix = (prefix_t *) (ln->data);
 		inet_ntop (prefix->family, &(prefix->add), addrbuf, sizeof (addrbuf));
-		snprintf (buf, sizeof (buf), "%s %s", buf, addrbuf);
+		snprintf (resbuf, sizeof (resbuf), "%s %s/%d", 
+			  buf, addrbuf, prefix->bitlen);
+		strncpy (buf, resbuf, sizeof (buf));
 	}
 	
-	snprintf (buf, sizeof (buf), "%s\n\n", buf);
+	snprintf (resbuf, sizeof (resbuf), "%s\n\n", buf);
 
-	WRITE_SOCKET (socket, buf);
+	printf ("%s", resbuf);
+
+	if (WRITE_SOCKET (socket, resbuf) < 0)
+		error_warn ("%s : write to cmd socket failed", __func__);
 
 	return;
 }
@@ -781,7 +821,7 @@ cmd_show_eid (int socket, char ** args)
 enum return_type
 cmd_show_mapserver (int socket, char ** args)
 {
-	char buf[CONTROL_MSG_BUF_LEN], addrbuf[52];
+	char buf[CONTROL_MSG_BUF_LEN], addrbuf[ADDRBUFLEN];
 	
 	memset (buf, 0, sizeof (buf));
 	memset (addrbuf, 0, sizeof (addrbuf));
@@ -814,10 +854,13 @@ cmd_show_mapserver (int socket, char ** args)
 enum return_type
 config_show (int socket, char ** args)
 {
-	char * action = args[2];
+	char * action = args[1];
+
+	if (action == NULL) 
+		return ERR_INVALID_COMMAND;
 
 	if (strcmp (action, "ipv4-route") == 0) {
-		return cmd_show_route (AF_INET6, socket, args);
+		return cmd_show_route (AF_INET, socket, args);
 	}
 	
 	else if (strcmp (action, "ipv6-route") == 0) {
@@ -828,7 +871,7 @@ config_show (int socket, char ** args)
 		return cmd_show_eid (socket, args);
 	}
 
-	else if (strcmp (action, "map-server") == 0) {
+	else if (strcmp (action, "mapserver") == 0) {
 		return cmd_show_mapserver (socket, args);
 	}
 
@@ -838,21 +881,6 @@ config_show (int socket, char ** args)
 
 
 /* install/uninstall static route*/
-enum return_type
-config_route (int socket, char ** args)
-{
-	char * action = args[3];
-
-	if (strcmp (action, "delete") == 0) {
-		return cmd_delete_route (args);
-	} else {
-		return cmd_isntall_route (args);
-	}
-
-	return ERR_INVALID_COMMAND;
-}
-
-
 
 enum return_type
 cmd_install_route (char ** args)
@@ -874,22 +902,23 @@ cmd_install_route (char ** args)
 		return ERR_INVALID_COMMAND;
 	}
 	
-	/* validate destinatin prefix */
-	if ((dst_prefix = ascii2prefix (af, c_dst_prefix)) == NULL)
-		return ERR_INVALID_ADDRESS;
-
 	/* validate locator address */
 	memset (&hints, 0, sizeof (hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
 
-	if (getaddrinfo (c_loc_addr, LISP_DATA_CPORT, &hints, &res) != 0) {
-		free (dst_prefix);
+	if (getaddrinfo (c_loc_addr, LISP_DATA_CPORT, &hints, &res) != 0) 
 		return ERR_INVALID_ADDRESS;
-	}
 
-	install_mapnode_static (lisp.rib, dst_prefix, *(res->ai_addr));
+	/* validate destinatin prefix */
+	if ((dst_prefix = ascii2prefix (af, c_dst_prefix)) == NULL)
+		return ERR_INVALID_ADDRESS;
+
+	memset (&sastr, 0, sizeof (sastr));
+	memcpy (&sastr, res->ai_addr, res->ai_addrlen);
+
+	install_mapnode_static (lisp.rib, dst_prefix, sastr);
 
 	return SUCCESS;
 }
@@ -901,6 +930,7 @@ cmd_delete_route (char ** args)
 	int af;
 	char * c_af = args[1];
 	char * c_dst_prefix = args[2];
+	prefix_t * dst_prefix;
 
 	/* validate AI FAMILY */
 	if (strcmp (c_af, "ipv4") == 0) {
@@ -915,9 +945,31 @@ cmd_delete_route (char ** args)
 	if ((dst_prefix = ascii2prefix (af, c_dst_prefix)) == NULL)
 		return ERR_INVALID_ADDRESS;
 	
-	if (uninstall_mapnode_static (lisp.rib, dst_prefix) < 0)
+	if (uninstall_mapnode_static (lisp.rib, dst_prefix) < 0) {
+		free (dst_prefix);
 		return ERR_FAILED;
+	}
 	
+	free (dst_prefix);
 	return SUCCESS;
 }
+
+
+enum return_type
+config_route (int socket, char ** args)
+{
+	char * action = args[3];
+
+	if (args[1] == NULL || args[2] == NULL || args[3] == NULL)
+		return ERR_INVALID_COMMAND;
+
+	if (strcmp (action, "delete") == 0) {
+		return cmd_delete_route (args);
+	} else {
+		return cmd_install_route (args);
+	}
+
+	return ERR_INVALID_COMMAND;
+}
+
 

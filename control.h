@@ -38,20 +38,20 @@ enum return_type {
 
 /*
  * lixyctl [element] [value] [action]
- *		0	  1		 2 
- *	lixyctl mapserver [v4/v6_prefix] [delete]
- *	lixyctl locator   [v4/v6_prefix] [priority|weight|m_prioritu|m_weight|delete]
- *	lixyctl eid 	  eid_name 	 [create|delete]
- *	lixyctl eid 	  eid_name 	 authkey [keystring]
- *	lixyctl eid 	  eid_name 	 interface [interface name]
- *	lixyctl eid 	  eid_name 	 prefix [v4/v6_prefix] [delete]
+ *	   0	     1		 2 
+ * lixyctl mapserver [v4/v6_prefix|delete]
+ * lixyctl locator   [v4/v6_prefix] [priority|weight|m_prioritu|m_weight|create|delete]
+ * lixyctl eid 	     eid_name 	 [create|delete]
+ * lixyctl eid 	     eid_name 	 authkey [keystring]
+ * lixyctl eid 	     eid_name 	 interface [interface name|delete]
+ * lixyctl eid 	     eid_name 	 prefix [v4/v6_prefix] [delete]
  *
- *      lixyctl show      ipv4-route     [active|negative|drop|queried|static]
- *      lixyctl show      ipv6-route     [active|negative|drop|queried|static]
- *      lixyctl show      eid            [eid name]
- *      lixyctl show      map-server
+ * lixyctl show      ipv4-route  [active|negative|drop|queried|static]
+ * lixyctl show      ipv6-route  [active|negative|drop|queried|static]
+ * lixyctl show      eid         [eid name]
+ * lixyctl show      map-server
  *
- *	lixyctl route     [ipv4|ipv6]    [dst prefix]   [ITR|delete]
+ * lixyctl route     [ipv4|ipv6]    [dst prefix]   [ITR|delete]
  *
  */
 
@@ -68,6 +68,7 @@ enum return_type config_map_server (int socket, char ** args);
 enum return_type config_locator (int socket, char ** args);
 enum return_type config_eid (int socket, char ** args);
 enum return_type config_show (int socket, char ** args);
+enum return_type config_route (int socket, char ** args);
 
 list_t * install_cmd_node (void);
 char ** install_control_message (void);
