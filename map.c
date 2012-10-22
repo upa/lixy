@@ -202,7 +202,8 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 			tmpafi = htons (LISP_AFI_IPV4);
 			memcpy (ptr, &tmpafi, sizeof (tmpafi));
 			pktlen += sizeof (tmpafi);
-			memcpy (buf + pktlen, &(EXTRACT_INADDR(loc->loc_addr)),
+			memcpy (buf + pktlen, 
+				&(EXTRACT_INADDR(loc->loc_addr)),
 				sizeof (struct in_addr));
 			pktlen += sizeof (struct in_addr);
 			break;
@@ -211,7 +212,8 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 			tmpafi = htons (LISP_AFI_IPV6);
 			memcpy (ptr, &tmpafi, sizeof (tmpafi));
 			pktlen += sizeof (tmpafi);
-			memcpy (buf + pktlen, &(EXTRACT_IN6ADDR(loc->loc_addr)),
+			memcpy (buf + pktlen,  
+				&(EXTRACT_IN6ADDR(loc->loc_addr)),
 				sizeof (struct in6_addr));
 			pktlen += sizeof (struct in6_addr);
 			break;

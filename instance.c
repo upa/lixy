@@ -450,6 +450,11 @@ lisp_map_reply_thread (void * param)
 			error_warn ("%s: recv failed", __func__);
 			continue;
 		}
+		if (len < sizeof (struct ip) + sizeof (struct lisp_control)) {
+			error_warn ("%s: recieved lisp control message is too short",
+				    __func__);
+			continue;
+		}
 
 		ctl_pkt = (struct lisp_control *) buf;
 
@@ -485,7 +490,8 @@ lisp_map_reply_thread (void * param)
 			}
 			break;
 		default :
-			error_warn ("%s: Invalid LSIP Message Type %d", ctl_pkt->type);
+			error_warn ("%s: Invalid LSIP Message Type %d", 
+				    __func__, ctl_pkt->type);
 			continue;
 			break;
 		}
