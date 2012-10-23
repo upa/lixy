@@ -50,6 +50,7 @@ enum return_type {
  * lixyctl show      ipv6-route  [active|negative|drop|queried|static]
  * lixyctl show      eid         [eid name]
  * lixyctl show      map-server
+ * lixyctl show      locator
  *
  * lixyctl route     [ipv4|ipv6]    [dst prefix]   [ITR|delete]
  *

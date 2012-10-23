@@ -56,12 +56,14 @@ create_raw_socket (char * ifname)
 	struct sockaddr_ll saddr_ll;
 	
 	if ((ifindex = if_nametoindex (ifname)) < 1) {
-		error_warn ("%s: interface \"%s\" is does not exits", __func__, ifname);
+		error_warn ("%s: interface \"%s\" is does not exits", 
+			    __func__, ifname);
 		return -1;
 	}
 
 	if ((sock = socket (AF_PACKET, SOCK_RAW, htons (ETH_P_ALL))) < 0) {
-		error_warn ("%s: can not create raw socket for \"%s\"", __func__, ifname);
+		error_warn ("%s: can not create raw socket for \"%s\"", 
+			    __func__, ifname);
 		return -1;
 	}
 	
@@ -83,7 +85,7 @@ create_raw_socket (char * ifname)
 int
 sendraw4 (int fd, void * packet)
 {
-        struct sockaddr_in saddr_in;
+        static struct sockaddr_in saddr_in;
         struct ip * ip = (struct ip *) packet;
 
         saddr_in.sin_addr = ip->ip_dst;
@@ -96,7 +98,7 @@ sendraw4 (int fd, void * packet)
 int
 sendraw6 (int fd, void * packet)
 {
-        struct sockaddr_in6 saddr_in6;
+        static struct sockaddr_in6 saddr_in6;
         struct ip6_hdr * ip6 = (struct ip6_hdr *) packet;
 
         saddr_in6.sin6_addr = ip6->ip6_dst;
@@ -494,10 +496,16 @@ lisp_dp_thread (void * param)
 
 		switch (ip->ip_v) {
 		case 4 :
-			sendraw4 (lisp.raw4_socket, ip);
+			if (sendraw4 (lisp.raw4_socket, ip) < 0)
+				error_warn ("%s: send IPv4 raw paceket"
+					    "faield, %s", __func__,
+					    strerror (errno));
 			break;
 		case 6 :
-			sendraw6 (lisp.raw6_socket, ip);
+			if (sendraw6 (lisp.raw6_socket, ip) < 0)
+				error_warn ("%s: send IPv6 raw paceket"
+					    "faield", __func__,
+					    strerror (errno));
 			break;
 		default :
 			error_warn ("%s: invalid ip version %d", 

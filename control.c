@@ -127,11 +127,16 @@ install_control_message (void)
 	SET_CONTROL_MSG (ptr, ERR_LOCATOR_EXISTS, "Locator exists\n");
 	SET_CONTROL_MSG (ptr, ERR_INTERFACE_EXISTS, "Interface exists\n");
 	SET_CONTROL_MSG (ptr, ERR_ADDRESS_EXISTS, "Address exists\n");
-	SET_CONTROL_MSG (ptr, ERR_EID_DOES_NOT_EXISTS, "EID does not exists\n");
-	SET_CONTROL_MSG (ptr, ERR_LOCATOR_DOES_NOT_EXISTS, "Locator does not exists\n");
-	SET_CONTROL_MSG (ptr, ERR_INTERFACE_DOES_NOT_EXISTS, "Interface doesnot exists\n");
-	SET_CONTROL_MSG (ptr, ERR_ADDRESS_DOES_NOT_EXISTS, "Address does not exists\n");
-	SET_CONTROL_MSG (ptr, ERR_AUTHKEY_TOO_LONG, "authentication key is too long\n");
+	SET_CONTROL_MSG (ptr, ERR_EID_DOES_NOT_EXISTS, 
+			 "EID does not exists\n");
+	SET_CONTROL_MSG (ptr, ERR_LOCATOR_DOES_NOT_EXISTS, 
+			 "Locator does not exists\n");
+	SET_CONTROL_MSG (ptr, ERR_INTERFACE_DOES_NOT_EXISTS, 
+			 "Interface doesnot exists\n");
+	SET_CONTROL_MSG (ptr, ERR_ADDRESS_DOES_NOT_EXISTS, 
+			 "Address does not exists\n");
+	SET_CONTROL_MSG (ptr, ERR_AUTHKEY_TOO_LONG, 
+			 "authentication key is too long\n");
 	
 	return ptr;
 }
@@ -177,7 +182,8 @@ lisp_op_thread (void * param)
 
 		/* read commands */
 		if (read (accept_socket, buf, sizeof (buf)) < 0) {
-			error_warn ("%s: read(2) control socket failed", __func__);
+			error_warn ("%s: read(2) control socket failed", 
+				    __func__);
 			close (accept_socket);
 			continue;
 		}
@@ -191,8 +197,10 @@ lisp_op_thread (void * param)
 		}
 		
 		/* search command from cmd_node tuple */
-		if ((cnode = search_cmd_node (lisp.cmd_tuple, args[0])) == NULL) {
-			error_warn ("%s: invalid command %s", __func__, args[0]);
+		if ((cnode = search_cmd_node (lisp.cmd_tuple, args[0])) 
+		    == NULL) {
+			error_warn ("%s: invalid command %s", 
+				    __func__, args[0]);
 			WRITE_CONTROL_MSG (accept_socket, ERR_INVALID_COMMAND);
 			close (accept_socket);
 			continue;
@@ -853,13 +861,15 @@ cmd_show_mapserver (int socket, char ** args)
 	case AF_INET :
 		inet_ntop (AF_INET, &(EXTRACT_INADDR (lisp.mapsrvaddr)), 
 				      addrbuf, sizeof (addrbuf));
-		snprintf (buf, sizeof (buf), "map server address : %s\n", addrbuf);
+		snprintf (buf, sizeof (buf), 
+			  "map server address : %s\n", addrbuf);
 		break;
 
 	case AF_INET6 :
 		inet_ntop (AF_INET6, &(EXTRACT_IN6ADDR (lisp.mapsrvaddr)), 
 				      addrbuf, sizeof (addrbuf));
-		snprintf (buf, sizeof (buf), "map server address : %s\n", addrbuf);
+		snprintf (buf, sizeof (buf),
+			  "map server address : %s\n", addrbuf);
 		break;
 
 	default :
@@ -872,6 +882,38 @@ cmd_show_mapserver (int socket, char ** args)
 	return SUCCESS_NO_MESSAGE;
 }
 
+enum return_type
+cmd_show_locator (int socket, char ** args)
+{
+	char buf[CONTROL_MSG_BUF_LEN], addrbuf[ADDRBUFLEN];
+	listnode_t * ln;
+	struct locator * loc;
+
+	memset (buf, 0, sizeof (buf));
+	memset (addrbuf, 0, sizeof (addrbuf));
+
+	snprintf (buf, sizeof (buf), 
+		  "all %d locators\n", MYLIST_COUNT (lisp.loc_tuple));
+	WRITE_SOCKET (socket, buf);
+
+	MYLIST_FOREACH (lisp.loc_tuple, ln) {
+		loc = (struct locator *)(ln->data);
+		inet_ntop (EXTRACT_FAMILY (loc->loc_addr),
+			   (EXTRACT_FAMILY (loc->loc_addr) == AF_INET) ?
+			   (void *)&(EXTRACT_INADDR (loc->loc_addr)) : 
+			   (void *)&(EXTRACT_IN6ADDR (loc->loc_addr)),
+			   addrbuf, sizeof (addrbuf));
+
+		snprintf (buf, sizeof (buf), 
+			  "%s priority=%d, weigth=%d, "
+			  "m priority=%d, m weigth=%d\n",
+			  addrbuf, loc->priority, loc->weight, 
+			  loc->m_priority, loc->m_weight);
+		WRITE_SOCKET (socket, buf);
+	}
+
+	return SUCCESS_NO_MESSAGE;
+}
 
 
 enum return_type
@@ -896,6 +938,10 @@ config_show (int socket, char ** args)
 
 	else if (strcmp (action, "mapserver") == 0) {
 		return cmd_show_mapserver (socket, args);
+	} 
+
+	else if (strcmp (action, "locator") == 0) {
+		return cmd_show_locator (socket, args);
 	}
 
 	return ERR_INVALID_COMMAND;

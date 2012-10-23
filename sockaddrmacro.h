@@ -26,12 +26,12 @@
         (((struct sockaddr *)(&(sa)))->sa_family)
 
 #define EXTRACT_SALEN(sa) \
-	(EXTRACT_FAMILY(sa) == AF_INET) ? sizeof (struct sockaddr_in) : 	\
-	(EXTRACT_FAMILY(sa) == AF_INET6) ? sizeof (struct sockaddr_in6) : 	\
+	(EXTRACT_FAMILY(sa) == AF_INET) ? sizeof (struct sockaddr_in) :	\
+	(EXTRACT_FAMILY(sa) == AF_INET6) ? sizeof (struct sockaddr_in6) : \
 	-1
 #define EXTRACT_ADDRLEN(sa) \
-	(EXTRACT_FAMILY(sa) == AF_INET) ? sizeof (struct in_addr) : 		\
-	(EXTRACT_FAMILY(sa) == AF_INET6) ? sizeof (struct in6_addr) : -1	\
+	(EXTRACT_FAMILY(sa) == AF_INET) ? sizeof (struct in_addr) :	\
+	(EXTRACT_FAMILY(sa) == AF_INET6) ? sizeof (struct in6_addr) : -1 \
 
 
 #define EXTRACT_PORT(sa) (((struct sockaddr_in *)&(sa))->sin_port)
@@ -100,12 +100,11 @@
 			memcpy (&(((struct sockaddr_in *)(sa))->sin_addr), \
 				&(in),                                  \
 				sizeof (struct in_addr));               \
-									\
 			break;                                          \
 									\
 		case AF_INET6:                                          \
-			((struct sockaddr_in6 *)(sa))->sin6_family = AF_INET6; \
-			memcpy (&(((struct sockaddr_in6 *)(sa))->sin6_addr), \
+			((struct sockaddr_in6*)(sa))->sin6_family = AF_INET6; \
+			memcpy (&(((struct sockaddr_in6*)(sa))->sin6_addr), \
 				&(in),                                  \
 				sizeof (struct in6_addr));              \
 			break;                                          \
@@ -115,7 +114,7 @@
 
 #define COMPARE_SOCKADDR(s1, s2)                                        \
         ((struct sockaddr *)s1)->sa_family !=                           \
-                (((struct sockaddr *)s2)->sa_family) ? -1 :             \
+                (((struct sockaddr *)s2)->sa_family) ? 0 :             \
                 (((struct sockaddr *)s1)->sa_family == AF_INET) ?       \
                 COMPARE_SOCKADDR_IN (s1, s2) :COMPARE_SOCKADDR_IN6 (s1, s2) \
 

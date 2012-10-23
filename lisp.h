@@ -57,8 +57,6 @@ struct lisp_hdr {
 #endif
 	union {
 		u_int8_t	lisp_hdr_un1_data8[3];
-		u_int16_t	lisp_hdr_un1_data12_1:12;
-		u_int16_t	lisp_hdr_un1_data12_2:12;
 	} lisp_data_un1;
 	union {
 		u_int8_t	lisp_hdr_un2_data8[4];
@@ -73,8 +71,8 @@ struct lisp_hdr {
 #define lhdr_loc_status	lisp_data_un2.lisp_hdr_un2_data32
 
 /* if V bit is set to 1, 24bit of 1st 32bit is "Src/Dst Map version" */
-#define lhdr_src_map_version	lisp_data_un1.lisp_hdr_un1_data12_1
-#define lhdr_dst_map_version	lisp_data_un1.lisp_hdr_un1_data12_2
+//#define lhdr_src_map_version	lisp_data_un1._data12.lisp_hdr_un1_data12_1[0]
+//#define lhdr_dst_map_version	lisp_data_un1._data12.lisp_hdr_un1_data12_2[1]
 
 /* if I bit is set to 1, 2nd 32bit is "Instance ID and LSBs" */
 #define lhdr_instance_id	lisp_data_un2.lisp_hdr_un2_data8

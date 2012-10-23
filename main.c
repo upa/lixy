@@ -44,7 +44,16 @@ create_udp_socket (int port)
 int 
 create_lisp_udp_socket (void)
 {
-	return create_udp_socket (LISP_DATA_PORT);
+	int sock, on = 1;
+
+	sock = create_udp_socket (LISP_DATA_PORT);
+	
+	if (setsockopt (sock, SOL_SOCKET, SO_NO_CHECK,
+			&on, sizeof (on)) != 0)
+		err (EXIT_FAILURE, "can not set SO_NO_CHECK");
+
+
+	return sock;
 }
 
 int 
