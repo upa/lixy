@@ -774,8 +774,8 @@ send_map_request (prefix_t * prefix)
 	int len;
 	char buf[LISP_MSG_BUF_LEN];
 	
-	if (EXTRACT_SALEN (lisp.mapsrvaddr) == 0) {
-		error_warn ("map server is node defined");
+	if (EXTRACT_FAMILY (lisp.mapsrvaddr) == 0) {
+		error_warn ("%s: map server is not defined", __func__);
 		return -1;
 	}
 

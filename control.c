@@ -332,7 +332,7 @@ cmd_delete_locator (char ** args)
 
 	memcpy (&loc_addr, res->ai_addr, res->ai_addrlen);
 
-	if (unset_lisp_locator (loc_addr) != 0) {
+	if (unset_lisp_locator (loc_addr) < 0) {
 		freeaddrinfo (res);
 		return ERR_LOCATOR_DOES_NOT_EXISTS;
 	}
@@ -756,9 +756,11 @@ cmd_show_route (int af, int socket, char ** args)
 	PATRICIA_WALK (MAPTABLE_TREE_HEAD (lisp.rib), pn) {
 		mn = (struct mapnode *) (pn->data);
 		if (state < 0 || state == mn->state) {
-
 			if (pn->prefix->family != af) 
 				PATRICIA_WALK_BREAK;
+
+			memset (addrbuf1, 0, sizeof (addrbuf1));
+			memset (addrbuf2, 0, sizeof (addrbuf2));
 
 			/* extract destination prefix from prefix_t*/
 			inet_ntop (pn->prefix->family, &(pn->prefix->add), 
@@ -775,10 +777,11 @@ cmd_show_route (int af, int socket, char ** args)
 					   addrbuf2, sizeof (addrbuf2));
 				break;	
 			default :
-				error_warn ("%s: invalid family in mapnode", __func__);
+				error_warn ("%s: invalid family in mapnode", 
+					    __func__);
 			}
 			
-			snprintf (buf, sizeof (buf), "%s/%d %s %s\n", 
+			snprintf (buf, sizeof (buf), "%s/%d via %s %s\n", 
 				  addrbuf1, pn->prefix->bitlen, addrbuf2, 
 				  mapstate_string[mn->state]);
 			printf ("%s", buf);
@@ -873,7 +876,7 @@ cmd_show_mapserver (int socket, char ** args)
 		break;
 
 	default :
-		snprintf (buf, sizeof (buf), "map server is node defined\n");
+		snprintf (buf, sizeof (buf), "map server is not defined\n");
 		break;
 	}
 	

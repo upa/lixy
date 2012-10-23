@@ -265,6 +265,7 @@ start_eid_forwarding_thread (struct eid * eid)
 void *
 eid_forwarding_thread (void * param)
 {
+	int len;
 	char buf[LISP_EID_DP_BUF_LEN];
 	struct eid * eid;
 	struct msghdr mhdr;
@@ -331,11 +332,19 @@ eid_forwarding_thread (void * param)
 		    mn->state == MAPSTATE_QUERIED) {
 			/* native forwarding */
 			switch (ntohs (ehdr->ether_type)) {
-			case AF_INET : 
-				sendraw4 (lisp.raw4_socket, ip);
+			case ETH_P_IP : 
+				if ((len = sendraw4 (lisp.raw4_socket, ip)) < 0)
+					error_warn ("%s: send IPv4 Packet "
+						    "via Raw socket failed. "
+						    "EID is %s, \"%s\"",
+						    __func__, eid->name, len);
 				break;
-			case AF_INET6 :
-				sendraw6 (lisp.raw6_socket, ip);
+			case ETH_P_IPV6 :
+				if ((len = sendraw6 (lisp.raw6_socket, ip)) < 0)
+					error_warn ("%s: send IPv6 Packet "
+						    "via Raw socket failed. "
+						    "EID is %s, \"%s\"",
+						    __func__, eid->name, len);
 				break;
 			}
 		} else if (mn->state == MAPSTATE_ACTIVE ||
