@@ -9,12 +9,14 @@
 #include <sys/types.h>
 #include <openssl/sha.h>
 
+#define PACKED __attribute__ ((__packed__))
+
 
 /* Misc Parameters */
 #define LISP_CONTROL_PORT	4342
 #define LISP_CONTROL_CPORT	"4342"
-#define LISP_DATA_PORT		4343
-#define LISP_DATA_CPORT		"4343"
+#define LISP_DATA_PORT		4341
+#define LISP_DATA_CPORT		"4341"
 
 #define LISP_DEFAULT_RECORD_TTL	10	/* min */
 #define LISP_MAX_KEYLEN		128
@@ -62,7 +64,7 @@ struct lisp_hdr {
 		u_int8_t	lisp_hdr_un2_data8[4];
 		u_int32_t	lisp_hdr_un2_data32;
 	} lisp_data_un2;
-};
+} PACKED;
 
 /* if N bit is set to 1, 24 bit of 1st 32bit is "Nonce" */
 #define lhdr_nonce		lisp_data_un1.lisp_hdr_un1_data8
@@ -104,7 +106,7 @@ struct lisp_control {
 	u_int8_t	rsv:3;
 #endif
 	u_int8_t	rsv2[3];
-};
+} PACKED;
 
 
 /*
@@ -166,13 +168,13 @@ struct lisp_map_request {
 #endif
 	u_int8_t	record_count;
 	u_int32_t	nonce[2];
-};
+} PACKED;
 
 struct lisp_map_request_record {
 	u_int8_t	rsv;
 	u_int8_t	eid_mask_len;
 	u_int16_t	eid_prefix_afi;
-};
+} PACKED;
 
 /*
   LISP Map Reply Message
@@ -215,10 +217,10 @@ struct lisp_map_reply {
 	u_int8_t	S_flag:1;
 	u_int8_t	rsv:1;
 #endif
-	u_int16_t	rsv2;
+	u_int8_t	rsv2[2];
 	u_int8_t	record_count;
 	u_int32_t	nonce[2];
-};
+} PACKED;
 
 /* ACT Field value in record (it is used only when loc count is 0)*/
 #define LISP_MAPREPLY_ACT_NOACTION	0
@@ -275,7 +277,7 @@ struct lisp_locator {
 	u_int8_t	R_flag:1;
 #endif
 	u_int16_t 	afi;
-};
+} PACKED;
 
 struct lisp_record {
 	u_int32_t	record_ttl;
@@ -302,7 +304,7 @@ struct lisp_record {
 #endif
 	u_int8_t	map_version_low;
 	u_int16_t	eid_prefix_afi;
-};
+} PACKED;
 
 
 struct lisp_map_register {
@@ -329,7 +331,7 @@ struct lisp_map_register {
 	u_int16_t	key_id;
 	u_int16_t	auth_data_len;
 	char		auth_data[SHA_DIGEST_LENGTH];
-};
+} PACKED;
 
 
 
@@ -378,7 +380,7 @@ struct lisp_map_notify {
 	u_int16_t	key_id;
 	u_int16_t	auth_data_len;
 	u_int8_t	auth_data[SHA_DIGEST_LENGTH];
-};
+} PACKED;
 
 
 

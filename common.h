@@ -17,15 +17,16 @@
 
 #define ADDRBUFLEN 56
 
+/* DO NOT CHANGE ORDER OF MEMBERS!! */
 struct locator {
 	struct sockaddr_storage loc_addr;
 	u_int8_t priority, weight, m_priority, m_weight;
 };
 
-struct eid {			/* EID Instance 				*/
-	int t_flag;		/* -1 is thread is not working, 1 is working 	*/
-	pthread_t tid;		/* Pthread ID of this EID instance			*/
-	int raw_socket;		/* Raw socket for recieving packet from own interface 	*/
+struct eid {			/* EID Instance */
+	int t_flag;		/* -1 is thread is not working, 1 is working */
+	pthread_t tid;		/* Pthread ID of this EID instance */
+	int raw_socket;		/* for recieving packet from own interface */
 
 	char name[LISP_EID_NAME_LEN];
 	char ifname[IFNAMSIZ];
@@ -37,24 +38,24 @@ struct eid {			/* EID Instance 				*/
 #include "maptable.h"
 
 struct lisp {
-	int udp_socket;		/* socket for sending encapsulated LISP packet	*/
-	int ctl_socket; 	/* socket for sending control LISP Packet	*/
-	int cmd_socket;		/* socket for configuration command		*/
-	int raw4_socket; 	/* socket for sending to eid prefix		*/
-	int raw6_socket; 	/* socket for sending to eid prefix		*/
+	int udp_socket;		/* socket for sending encapsulated packet */
+	int ctl_socket; 	/* socket for sending control LISP packet */
+	int cmd_socket;		/* socket for configuration command */
+	int raw4_socket; 	/* socket for sending to eid prefix */
+	int raw6_socket; 	/* socket for sending to eid prefix */
 
-	list_t * eid_tuple;			/* Local EID List		*/
-	list_t * loc_tuple;			/* locator address list 	*/
-	struct sockaddr_storage mapsrvaddr;	/* Map Server Address		*/
+	list_t * eid_tuple;			/* Local EID List */
+	list_t * loc_tuple;			/* locator address list	*/
+	struct sockaddr_storage mapsrvaddr;	/* Map Server Address	*/
 	
-	struct maptable * rib;			/* Map Table			*/
+	struct maptable * rib;			/* Map Table		*/
 
 	list_t * cmd_tuple;	/* configuration command list */
 	char ** ctl_message;	/* return message to control */
 
-	pthread_t process_map_register_t;
-	pthread_t process_map_reply_t;
-	pthread_t process_maptable_t;
+	pthread_t map_register_t;
+	pthread_t map_message_t;
+	pthread_t maptable_t;
 	pthread_t lisp_dp_t;
 	pthread_t lisp_op_t;
 };

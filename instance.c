@@ -102,8 +102,10 @@ sendraw6 (int fd, void * packet)
         saddr_in6.sin6_addr = ip6->ip6_dst;
         saddr_in6.sin6_family = AF_INET6;
         
-        return sendto (fd, packet, ntohs (ip6->ip6_plen) + sizeof (struct ip6_hdr),
-		       0, (struct sockaddr *) &saddr_in6, sizeof (saddr_in6));
+        return sendto (fd, packet, 
+		       ntohs (ip6->ip6_plen) + sizeof (struct ip6_hdr),
+		       0, (struct sockaddr *) &saddr_in6, 
+		       sizeof (saddr_in6));
 }
 
 struct eid * 
@@ -245,12 +247,14 @@ start_eid_forwarding_thread (struct eid * eid)
 
 	/* check socket */
 	if (eid->raw_socket < 0) {
-		error_warn ("%s: EID \"%s\", interface \"%s\" invalid raw socket",
+		error_warn ("%s: EID \"%s\", interface \"%s\" "
+			    "invalid raw socket",
 			    eid->name, eid->ifname);
 		return -1;
 	}
 
-	error_warn ("%s: start forwarding thread for EID \"%s\"", __func__, eid->name);
+	error_warn ("%s: start forwarding thread for EID \"%s\"", 
+		    __func__, eid->name);
 	pthread_create (&(eid->tid), &attr, eid_forwarding_thread, eid);
 
 	return 1;
@@ -294,14 +298,16 @@ eid_forwarding_thread (void * param)
 		ehdr = (struct ether_header *) buf;		
 		switch (ntohs (ehdr->ether_type)) {
 		case ETH_P_IP :
-			ip = (struct ip *) (buf + sizeof (struct ether_header));
+			ip = (struct ip *)(buf + sizeof (struct ether_header));
 			ADDRTOPREFIX (AF_INET, ip->ip_dst, 32, &dst_prefix);
 			mn = search_mapnode (lisp.rib, &dst_prefix);
 			break;
 
 		case ETH_P_IPV6 :
-			ip6 = (struct ip6_hdr *)(buf + sizeof (struct ether_header));
-			ADDRTOPREFIX (AF_INET6, ip6->ip6_dst, 128, &dst_prefix);
+			ip6 = (struct ip6_hdr *)
+				(buf + sizeof (struct ether_header));
+			ADDRTOPREFIX (AF_INET6, ip6->ip6_dst, 
+				      128, &dst_prefix);
 			mn = search_mapnode (lisp.rib, &dst_prefix);
 			break;
 
@@ -435,14 +441,12 @@ lisp_map_register_thread (void * param)
 	return NULL;
 }
 
+
 void * 
-lisp_map_reply_thread (void * param)
+lisp_map_message_thread (void * param)
 {
 	int len;
 	char buf[LISP_MSG_BUF_LEN];
-	struct lisp_control * ctl_pkt;
-	struct lisp_map_reply * rep;
-	struct ip * ip;
 
 	while (1) {
 		len = recv (lisp.ctl_socket, buf, sizeof (buf), 0);
@@ -451,52 +455,13 @@ lisp_map_reply_thread (void * param)
 			continue;
 		}
 		if (len < sizeof (struct ip) + sizeof (struct lisp_control)) {
-			error_warn ("%s: recieved lisp control message is too short",
+			error_warn ("%s: recieved lisp control message "
+				    "is too short",
 				    __func__);
 			continue;
 		}
-
-		ctl_pkt = (struct lisp_control *) buf;
-
-		switch (ctl_pkt->type) {
-		case LISP_MAP_RPLY :
-			rep = (struct lisp_map_reply *)(ctl_pkt + 1);
-			break;
-
-		case LISP_ECAP_CTL :
-			ip = (struct ip *) (buf + sizeof (struct lisp_control));
-			switch (ip->ip_v) {
-			case 4 :
-				rep = (struct lisp_map_reply *) 
-					(buf 
-					 + sizeof (struct lisp_control) 
-					 + sizeof (struct ip) 
-					 + sizeof (struct udphdr));
-				break;
-
-			case 6 :
-				rep = (struct lisp_map_reply *) 
-					(buf 
-					 + sizeof (struct lisp_control) 
-					 + sizeof (struct ip6_hdr) 
-					 + sizeof (struct udphdr));
-				break;
-			default : 
-				error_warn ("%s: Invalid inner IP version in"
-					    "Encapsulated Control Message %d",
-					    ip->ip_v);
-				continue;
-				break;
-			}
-			break;
-		default :
-			error_warn ("%s: Invalid LSIP Message Type %d", 
-				    __func__, ctl_pkt->type);
-			continue;
-			break;
-		}
-		
-		process_lisp_map_reply ((char *)rep);
+		error_warn ("%s: recieved length is %d", __func__, len);
+		process_lisp_map_message (buf);
 	}
 
 	return NULL;
@@ -535,7 +500,8 @@ lisp_dp_thread (void * param)
 			sendraw6 (lisp.raw6_socket, ip);
 			break;
 		default :
-			error_warn ("%s: invalid ip version %d", __func__, ip->ip_v);
+			error_warn ("%s: invalid ip version %d", 
+				    __func__, ip->ip_v);
 			break;
 		}
 	}

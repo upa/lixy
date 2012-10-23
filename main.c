@@ -26,11 +26,14 @@ create_udp_socket (int port)
 	saddr_in6.sin6_family = AF_INET6;
 	saddr_in6.sin6_port = htons (port);
 
-	if (bind (sock, (struct sockaddr *) &saddr_in6, sizeof (saddr_in6)) < 0)
+	if (bind (sock, 
+		  (struct sockaddr *) &saddr_in6, 
+		  sizeof (saddr_in6)) < 0)
 		err (EXIT_FAILURE, "can not bind date plane udp socket");
 #if 0
 	int off = 0;
-	if (setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY, &off, sizeof (off)) != 0)
+	if (setsockopt (sock, IPPROTO_IPV6, IPV6_V6ONLY, 
+			&off, sizeof (off)) != 0)
 		err (EXIT_FAILURE, "can not set IPV6_V6ONLY off");
 #endif
 
@@ -58,17 +61,22 @@ create_lisp_raw_socket (int af)
 
 #ifdef linux
 	if ((sock = socket (af, SOCK_RAW, IPPROTO_RAW)) < 0)
-		err (EXIT_FAILURE, "can not create raw socket for send packet");
+		err (EXIT_FAILURE, "can not create "
+		     "raw socket for send packet");
 
 	switch (af) {
 	case AF_INET :
-		if (setsockopt (sock, IPPROTO_IP, IP_HDRINCL, &on, sizeof (on)) != 0)
-			err (EXIT_FAILURE, "can not set sock opt IPv4 HDRINCL");
+		if (setsockopt (sock, IPPROTO_IP, IP_HDRINCL, 
+				&on, sizeof (on)) != 0)
+			err (EXIT_FAILURE, "can not set sock opt "
+			     "IPv4 HDRINCL");
 		break;
 #if 0
 	case AF_INET6 :
-		if (setsockopt (sock, IPPROTO_IPV6, IPV6_HDRINCL, &on, sizeof (on)) != 0)
-			err (EXIT_FAILURE, "can not set sock opt IPv6 HDRINCL");
+		if (setsockopt (sock, IPPROTO_IPV6, IPV6_HDRINCL, 
+				&on, sizeof (on)) != 0)
+			err (EXIT_FAILURE, "can not set sock opt "
+			     "IPv6 HDRINCL");
 		break;
 #endif
 	}
@@ -122,11 +130,10 @@ main (int argc, char * argv[])
 
 	lisp.rib = create_maptable ();
 	
-	start_lisp_thread (&(lisp.process_map_register_t), lisp_map_register_thread);
-	start_lisp_thread (&(lisp.process_map_reply_t), lisp_map_reply_thread);
-	start_lisp_thread (&(lisp.process_maptable_t), lisp_maptable_thread);
+	start_lisp_thread (&(lisp.map_register_t), lisp_map_register_thread);
+	start_lisp_thread (&(lisp.map_message_t), lisp_map_message_thread);
+	start_lisp_thread (&(lisp.maptable_t), lisp_maptable_thread);
 	start_lisp_thread (&(lisp.lisp_dp_t), lisp_dp_thread);
-
 
 	lisp_op_thread (NULL);
 

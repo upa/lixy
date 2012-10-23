@@ -71,7 +71,7 @@ void * lisp_maptable_thread (void * param);
 		(prefix)->family = AF_INET##af;	\
 		(prefix)->bitlen = len;		\
 		(prefix)->ref_count = 0;	\
-		(prefix)->add.sin##af = *((struct in##af##_addr *)&addr);\
+		(prefix)->add.sin##af = *((struct in##af##_addr *)&(addr)); \
 	} while (0)
 
 #define ADDRTOPREFIX(af, sin, len, prefix)		\
@@ -82,6 +82,9 @@ void * lisp_maptable_thread (void * param);
 	case AF_INET6 :					\
 		_ADDRTOPREFIX (6, sin, len, prefix);	\
                 break;					\
+	default :							\
+		error_warn ("%s: invalid AF \"%d\"in ADDRTOPREFIX",	\
+			    __func__, af);				\
         }
 
 

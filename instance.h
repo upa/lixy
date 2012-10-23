@@ -28,8 +28,8 @@ int unset_lisp_locator (struct sockaddr_storage loc_addr);
 
 void start_lisp_thread (pthread_t * tid, void * (* thread) (void * param));	
 
-void * lisp_map_register_thread (void * param);	/* register EIDs periodically	*/
-void * lisp_map_reply_thread (void * param);	/* process map reply thread	*/
-void * lisp_dp_thread (void * param);		/* recv LISP encaped DP packet	*/
+void * lisp_map_register_thread (void * param);	/* register EID periodically */
+void * lisp_map_message_thread (void * param);	/* process message thread */
+void * lisp_dp_thread (void * param);		/* recv LISP DP packet	*/
 
 #endif /* _INSTANCE_H_*/
