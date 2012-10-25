@@ -1,0 +1,9 @@
+multi:
+priority: 840
+type: txt
+help: EID Prefix
+
+syntax:expression: exec "/opt/vyatta/sbin/valid_address $VAR(@)"
+
+update: sudo /usr/local/sbin/lixyctl eid $VAR(../@) prefix $VAR(@)
+delete: sudo /usr/local/sbin/lixyctl eid $VAR(../@) prefix delete

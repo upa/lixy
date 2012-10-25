@@ -1,0 +1,58 @@
+#!/bin/sh
+# Start/Stop the lixyd
+#
+
+NAME=lixyd
+DAEMON=/usr/local/sbin/lixyd
+PIDFILE=/var/run/lixyd.pid
+
+
+if [ ! -x $DAEMON ]; then
+	echo "$DAEMON does not exist"
+	exit 0
+fi
+
+if [ `id -u` != "0" ]; then
+	echo "please run as a root"
+	exit 0
+fi
+
+
+start()
+{
+	if [ -e $PIDFILE ]; then
+		echo "pid file ($PIDFILE) exists"
+		exit 0
+	fi
+	echo start $NAME
+	$DAEMON > /dev/null 2>&1 &
+	echo $! > $PIDFILE
+}
+
+stop()
+{
+	if [ -e $PIDFILE ]; then
+		echo stop $NAME
+		kill `cat $PIDFILE`
+		rm $PIDFILE
+	else
+		echo "not running?"
+		exit 0
+	fi
+}
+
+restart ()
+{
+	stop
+	start
+}
+
+
+case $1 in
+	start) start ;;
+	stop) stop ;;
+	restart) restart ;;
+	*) echo "$0 [start|stop]" ;;
+esac
+
+exit 0

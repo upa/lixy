@@ -1,0 +1,15 @@
+priority: 830
+type: u32
+help: Locator Multicast Weight
+val_help: <Multicast Weight>; Priority of Locator (default 0)
+
+syntax:expression: pattern $VAR(@) "\d+"
+
+update: if [ -e /var/run/lixy ]; then
+		sudo /usr/local/sbin/lixyctl locator $VAR(../@) m_weight $VAR(@)
+	fi
+
+
+update: if [ -e /var/run/lixy ]; then
+		sudo /usr/local/sbin/lixyctl locator $VAR(../@) m_weight 0
+	fi

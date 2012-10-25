@@ -1,0 +1,9 @@
+type: txt
+priority: 840
+help: Authentication Key for EID Registration
+
+syntax:expression: pattern $VAR(@) "^.{1,256}" \
+		; "authentication key is toolong (limit 256 characters)"
+
+update: sudo /usr/local/sbin/lixyctl eid $VAR(../@) authkey $VAR(@)
+delete: sudo /usr/local/sbin/lixyctl eid $VAR(../@) authkey delete

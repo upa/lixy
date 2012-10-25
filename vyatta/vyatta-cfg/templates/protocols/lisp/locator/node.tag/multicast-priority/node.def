@@ -1,0 +1,16 @@
+priority: 830
+type: u32
+help: Locator Multicast Priority
+val_help: <Multicast Priority>; Multicast Priority of Locator (default 0)
+
+syntax:expression: pattern $VAR(@) "\d+"
+
+update: if [ -e /var/run/lixy ]; then
+		sudo /usr/local/sbin/lixyctl \
+		locator $VAR(../@) m_priority $VAR(@)
+	fi
+
+
+update: if [ -e /var/run/lixy ]; then
+		sudo /usr/local/sbin/lixyctl locator $VAR(../@) m_priority 0
+	fi

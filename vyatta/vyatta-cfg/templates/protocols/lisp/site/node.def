@@ -1,0 +1,11 @@
+tag:
+priority: 820
+type: txt
+help: LISP Site configuration
+val_help: <text>; Site Name
+
+syntax:expression: pattern $VAR(@) "^.{1,256}" \
+			; "site name is too long (limit 25 characters)"
+
+update: sudo /usr/local/sbin/lixyctl eid $VAR(@) create
+delete: sudo /usr/local/sbin/lixyctl eid $VAR(@) delete

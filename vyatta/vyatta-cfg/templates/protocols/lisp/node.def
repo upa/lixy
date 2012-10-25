@@ -1,0 +1,5 @@
+priority: 800
+help: Locator/ID Separation Protocol (LISP) parameters
+
+create: sudo /etc/init.d/lixy start
+delete: sudo /etc/init.d/lixy stop

@@ -1,0 +1,16 @@
+priority: 810
+type: txt
+help: LISP Map Server Address
+
+val_help: ipv4; IPv4 Address
+val_help: ipv6; IPv6 Address
+
+syntax:expression: exec "/opt/vyatta/sbin/valid_address $VAR(@)/32"
+
+update: if [ -e /var/run/lixy ]; then
+		sudo /usr/local/sbin/lixyctl mapserver $VAR(@)
+	fi
+
+delete: if [ -e /var/run/lixy]; then
+		sudo /usr/local/sbin/lixyctl mapserver delete
+	fi
