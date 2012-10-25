@@ -1,6 +1,15 @@
 #!/bin/sh
 # Start/Stop the lixyd
 #
+### BEGIN INIT INFO
+# Provides:             lixyd
+# Required-Start:       $remote_fs $local_fs
+# REquired-Stop:        $remote_fs $local_fs
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    Locator/ID Separation Protocol for Vyatta
+#
+### END INIT INFO
 
 NAME=lixyd
 DAEMON=/usr/local/sbin/lixyd

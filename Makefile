@@ -44,3 +44,23 @@ maptable.c	: maptable.h sockaddrmacro.h
 common.h	: lisp.h list/list.h patricia/patricia.h
 control.h	: list/list.h
 control.c	: control.h instance.h sockaddrmacro.h error.h
+
+
+
+RCDST = /etc/init.d
+INSTALLDST = /usr/local/sbin
+UPDATERCD = /usr/sbin/update-rc.d
+
+install: $(PROGNAME)
+	install lixyd $(INSTALLDST)
+	install lixyctl $(INSTALLDST)
+	install lixy $(RCDST)
+	$(UPDATERCD) lixy defualt
+
+uninstall:
+	rm $(INSTALLDST)/lixyd
+	rm $(INSTALLDST)/lixtctl
+	$(UPDATERCD) -f lixy remove
+	rm $(RCDST)/(INITSCRIPT)
+
+
