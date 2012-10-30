@@ -26,7 +26,7 @@ void * eid_forwarding_thread (void * param);
 	do {							\
 		if (IS_EID_THREAD_RUNNING ((eid))) {		\
 			if (pthread_cancel ((eid)->tid) == 0)	\
-				(eid)->t_flag = -1;		\
+				(eid)->t_flag = 0;		\
 			else					\
 				error_warn ("faild to stop "	\
 					    "eid \"%s\"",	\
@@ -298,6 +298,10 @@ eid_forwarding_thread (void * param)
 			break;
 		}
 
+		/* interface is not set  */
+		if (!eid->t_flag) 
+			continue;
+
 		ehdr = (struct ether_header *) buf;		
 		switch (ntohs (ehdr->ether_type)) {
 		case ETH_P_IP :
@@ -336,7 +340,7 @@ eid_forwarding_thread (void * param)
 				if ((len = sendraw4 (lisp.raw4_socket, ip)) < 0)
 					error_warn ("%s: send IPv4 Packet "
 						    "via Raw socket failed. "
-						    "EID is %s, \"%s\"",
+						    "EID is %s, \"%d\"",
 						    __func__, eid->name, len);
 				break;
 			case ETH_P_IPV6 :

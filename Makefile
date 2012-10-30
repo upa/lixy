@@ -63,4 +63,10 @@ uninstall:
 	$(UPDATERCD) -f lixy remove
 	rm $(RCDST)/(INITSCRIPT)
 
+VYATTA_DST = /opt/vyatta/share
+install-vyatta: install
+	cp -r vyatta/vyatta-cfg $(VYATTA_DST)/vyatta-cfg
+	cp -r vyatta/vyatta-op $(VYATTA_DST)/vyatta-op
 
+uninstall-vyatta: 
+	rm -r $(VYATTA_DST)/vyatta-cfg/protocols/lisp
