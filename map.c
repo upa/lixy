@@ -660,7 +660,6 @@ process_lisp_map_request (char * pkt)
 		return 0;
 	}
 	pktlen += sizeof (struct lisp_map_request);
-	printf ("pktlen is %d\n", pktlen);
 
 #define REQUEST_LOC_LEN(locafi) \
 	((ntohs (*((u_int16_t *)(locafi))) == LISP_AFI_IPV4) ?		\
@@ -670,13 +669,10 @@ process_lisp_map_request (char * pkt)
 	
         /* Source EID AFI & address */
 	pktlen += REQUEST_LOC_LEN (pkt + pktlen);
-	printf ("pktlen is %d\n", pktlen);
 	
         /* ITR-RLOC-AFI and Address */
-	for (n = 0; n <= req->irc; n++)  {
+	for (n = 0; n <= req->irc; n++)  
 		pktlen += REQUEST_LOC_LEN (pkt + pktlen);
-		printf ("pktlen is %d\n", pktlen);
-	}
 
 	qrec = (struct lisp_map_request_record *)(pkt + pktlen);
 	pktlen += sizeof (struct lisp_map_request_record);
@@ -684,13 +680,6 @@ process_lisp_map_request (char * pkt)
 	
 	ADDRTOPREFIX (LISPAFI_TO_AF(ntohs (qrec->eid_prefix_afi)), 
 		      *eid_addr, qrec->eid_mask_len, &prefix);
-
-	char addrbuf[ADDRBUFLEN];
-	inet_ntop (prefix.family, &(prefix.add), 
-		   addrbuf, sizeof (addrbuf));
-	printf ("%s: prefix is %s/%d, family is %d\n", 
-		__func__, addrbuf, prefix.bitlen, prefix.family);
-
 
 	int len;
 	if ((len = send_map_reply (&prefix, req->nonce)) > 0)
@@ -716,11 +705,10 @@ process_lisp_map_reply (char * pkt)
 	/* Process Records */
 	rep = (struct lisp_map_reply *) pkt;
 	pktlen += sizeof (struct lisp_map_reply);
-	printf ("%s: pktlen = %d\n", __func__, pktlen);
+
 	for (n = 0; n < rep->record_count; n++) {
 		rec = (struct lisp_record *) (pkt + pktlen);
 		pktlen += LISP_RECORD_PKT_LEN (rec);
-		printf ("%s: pktlen = %d\n", __func__, pktlen);
 		if (rec->locator_count == 0) {
 			/* Negative Cache */ 
 			process_lisp_map_reply_record_loc_is_zero (rec);
@@ -733,7 +721,6 @@ process_lisp_map_reply (char * pkt)
 			if (lisploc->priority < tmplisploc->priority)
 				lisploc = tmplisploc;
 			pktlen += LISP_LOCATOR_PKT_LEN (tmplisploc);
-			printf ("%s: pktlen = %d\n", __func__, pktlen);
 			PRINT_INADDR (AF_INET, tmplisploc + 1, "process map rep");
 			tmplisploc = (struct lisp_locator *)(pkt + pktlen);
 

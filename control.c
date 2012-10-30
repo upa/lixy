@@ -776,9 +776,6 @@ cmd_show_route (int af, int socket, char ** args)
 				inet_ntop (AF_INET6, &(EXTRACT_IN6ADDR (mn->addr)), 
 					   addrbuf2, sizeof (addrbuf2));
 				break;	
-			default :
-				error_warn ("%s: invalid family in mapnode \"%d\"", 
-					    __func__, EXTRACT_FAMILY (mn->addr));
 			}
 			
 			snprintf (buf, sizeof (buf), "%s/%d via %s %s\n", 

@@ -4,6 +4,8 @@
 #include <net/ethernet.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
 
 #ifdef linux
 #include <linux/if_packet.h>
@@ -28,9 +30,10 @@ void * eid_forwarding_thread (void * param);
 			if (pthread_cancel ((eid)->tid) == 0)	\
 				(eid)->t_flag = 0;		\
 			else					\
-				error_warn ("faild to stop "	\
-					    "eid \"%s\"",	\
-					    eid->name);		\
+				error_warn ("faield to stop "	\
+					    "eid \"%s\", %s",	\
+					    eid->name,		\
+					    strerror (errno));	\
 		}						\
 	} while (0)
 
@@ -71,6 +74,8 @@ create_raw_socket (char * ifname)
 	saddr_ll.sll_family = AF_PACKET;
 	saddr_ll.sll_protocol = htons (ETH_P_ALL);
 	saddr_ll.sll_ifindex = ifindex;
+	saddr_ll.sll_pkttype = PACKET_HOST;
+	saddr_ll.sll_halen = ETH_ALEN;
 
 	if (bind (sock, (struct sockaddr *)&saddr_ll, sizeof (saddr_ll)) < 0){
 		error_warn ("%s: can not bind raw socket to \"%s\" : %s", 
@@ -114,7 +119,7 @@ struct eid *
 create_eid_instance (char * eidname)
 {
 	struct eid * eid;
-	
+
 	eid = (struct eid *) malloc (sizeof (struct eid));
 	memset (eid , 0, sizeof (struct eid));
 	strncpy (eid->name, eidname, LISP_EID_NAME_LEN);
@@ -137,6 +142,24 @@ delete_eid_instance (struct eid * eid)
 int
 set_eid_iface (struct eid * eid, char * ifname)
 {
+
+	int fd;
+	struct ifreq ifr;
+
+	if (if_nametoindex (ifname) < 1) {
+		error_warn ("%s: invalid interface \"%s\"", 
+			    __func__, ifname);
+		return -1;
+	}
+
+	fd = socket (AF_INET, SOCK_DGRAM, 0);
+	memset (&ifr, 0, sizeof (ifr));
+	ifr.ifr_addr.sa_family = AF_INET;
+	strncpy (ifr.ifr_name, ifname, IFNAMSIZ);
+	ioctl (fd, SIOCGIFHWADDR, &ifr);
+
+	memcpy (eid->mac, &(ifr.ifr_hwaddr.sa_data), ETH_ALEN);
+
 	if (IS_EID_THREAD_RUNNING (eid)) 
 		STOP_EID_THREAD (eid);
 
@@ -297,11 +320,15 @@ eid_forwarding_thread (void * param)
 			break;
 		}
 
+		/* packet from own self */
+		ehdr = (struct ether_header *) buf;		
+		if (!memcmp (ehdr->ether_shost, eid->mac, ETH_ALEN)) 
+			continue;
+
 		/* interface is not set  */
 		if (!eid->t_flag) 
 			continue;
 
-		ehdr = (struct ether_header *) buf;		
 		switch (ntohs (ehdr->ether_type)) {
 		case ETH_P_IP :
 			ip = (struct ip *)(buf + sizeof (struct ether_header));

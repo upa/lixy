@@ -6,6 +6,7 @@
 #include <net/if.h>
 #include <pthread.h>
 #include <utlist.h>
+#include <net/ethernet.h>
 
 #include "lisp.h"
 #include "list/list.h"
@@ -31,6 +32,8 @@ struct eid {			/* EID Instance */
 	char name[LISP_EID_NAME_LEN];
 	char ifname[IFNAMSIZ];
 	char authkey[LISP_MAX_KEYLEN];
+	
+	char * mac[ETH_ALEN];
 	list_t * prefix_tuple;
 };
 
