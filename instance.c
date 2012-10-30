@@ -284,7 +284,6 @@ eid_forwarding_thread (void * param)
 	/* create LISP Encapsulation header */
 	memset (&lhdr, 0, sizeof (lhdr));
 	lhdr.N_flag = 1;
-	lhdr.L_flag = 1;
 	lhdr.lhdr_loc_status = htonl (1);
 
 	mhdr.msg_iov = iov;
