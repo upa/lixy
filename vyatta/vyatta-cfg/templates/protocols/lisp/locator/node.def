@@ -9,10 +9,10 @@ val_help: ipv6; IPv6 Address
 
 syntax:expression: exec "/opt/vyatta/sbin/valid_address $VAR(@)/32"
 
-update: if [ -e /var/run/lixyctl ]; then
+create: if [ -e /var/run/lixy ]; then
 		sudo /usr/local/sbin/lixyctl locator $VAR(@) create
 	fi
 
-delete: if [ -e /var/run/lixyctl ]; then
+delete: if [ -e /var/run/lixy ]; then
 		sudo /usr/local/sbin/lixyctl locator $VAR(@) delete
 	fi

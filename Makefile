@@ -55,18 +55,18 @@ install: $(PROGNAME)
 	install lixyd $(INSTALLDST)
 	install lixyctl $(INSTALLDST)
 	install lixy $(RCDST)
-	$(UPDATERCD) lixy defualt
+	$(UPDATERCD) lixy defaults
 
 uninstall:
 	rm $(INSTALLDST)/lixyd
-	rm $(INSTALLDST)/lixtctl
+	rm $(INSTALLDST)/lixyctl
 	$(UPDATERCD) -f lixy remove
 	rm $(RCDST)/(INITSCRIPT)
 
 VYATTA_DST = /opt/vyatta/share
 install-vyatta: install
-	cp -r vyatta/vyatta-cfg $(VYATTA_DST)/vyatta-cfg
-	cp -r vyatta/vyatta-op $(VYATTA_DST)/vyatta-op
+	cp -r vyatta/vyatta-cfg $(VYATTA_DST)/
+	cp -r vyatta/vyatta-op $(VYATTA_DST)/
 
-uninstall-vyatta: 
-	rm -r $(VYATTA_DST)/vyatta-cfg/protocols/lisp
+uninstall-vyatta:  uninstall
+	rm -r $(VYATTA_DST)/vyatta-cfg/templates/protocols/lisp

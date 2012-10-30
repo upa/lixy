@@ -35,6 +35,7 @@ start()
 	fi
 	echo start $NAME
 	$DAEMON > /dev/null 2>&1 &
+	sleep 1
 	echo $! > $PIDFILE
 }
 
@@ -44,6 +45,9 @@ stop()
 		echo stop $NAME
 		kill `cat $PIDFILE`
 		rm $PIDFILE
+		if [ -e /var/run/lixy ]; then
+			rm /var/run/lixy
+		fi
 	else
 		echo "not running?"
 		exit 0
