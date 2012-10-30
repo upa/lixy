@@ -25,13 +25,13 @@
 
 #define LISP_LOCATOR_PKT_LEN(LOCPKT)				\
 	(sizeof (struct lisp_locator) +				\
-	 (ntohs ((LOCPKT)->afi) == LISP_AFI_IPV4) ?		\
-	 sizeof (struct in_addr) : sizeof (struct in6_addr))	\
+	 ((ntohs ((LOCPKT)->afi) == LISP_AFI_IPV4) ?		\
+	  sizeof (struct in_addr) : sizeof (struct in6_addr)))	\
 
 #define LISP_RECORD_PKT_LEN(RECPKT)				\
 	(sizeof (struct lisp_record) +				\
-	(ntohs ((RECPKT)->eid_prefix_afi) == LISP_AFI_IPV4) ?	\
-	 sizeof (struct in_addr) : sizeof (struct in6_addr))	\
+	 ((ntohs ((RECPKT)->eid_prefix_afi) == LISP_AFI_IPV4) ?	\
+	  sizeof (struct in_addr) : sizeof (struct in6_addr)))	\
 
 void hmac(char *md, void *buf, size_t size, char * key, int keylen);
 
@@ -706,7 +706,7 @@ process_lisp_map_reply (char * pkt)
 {
 	/* Probe, Echo-nonce, Security bit is not supported yet */
 	
-	int n, i, pktlen;
+	int n, i, pktlen = 0;
 	prefix_t * prefix;
 	struct mapnode * mn;
 	struct lisp_map_reply * rep;
@@ -715,10 +715,12 @@ process_lisp_map_reply (char * pkt)
 
 	/* Process Records */
 	rep = (struct lisp_map_reply *) pkt;
-	pktlen = sizeof (struct lisp_map_reply);
+	pktlen += sizeof (struct lisp_map_reply);
+	printf ("%s: pktlen = %d\n", __func__, pktlen);
 	for (n = 0; n < rep->record_count; n++) {
 		rec = (struct lisp_record *) (pkt + pktlen);
 		pktlen += LISP_RECORD_PKT_LEN (rec);
+		printf ("%s: pktlen = %d\n", __func__, pktlen);
 		if (rec->locator_count == 0) {
 			/* Negative Cache */ 
 			process_lisp_map_reply_record_loc_is_zero (rec);
@@ -731,7 +733,10 @@ process_lisp_map_reply (char * pkt)
 			if (lisploc->priority < tmplisploc->priority)
 				lisploc = tmplisploc;
 			pktlen += LISP_LOCATOR_PKT_LEN (tmplisploc);
+			printf ("%s: pktlen = %d\n", __func__, pktlen);
+			PRINT_INADDR (AF_INET, tmplisploc + 1, "process map rep");
 			tmplisploc = (struct lisp_locator *)(pkt + pktlen);
+
 		}
 
 		/* register lcoator to maptable */

@@ -90,8 +90,6 @@ sendraw4 (int fd, void * packet)
 
         saddr_in.sin_addr = ip->ip_dst;
         saddr_in.sin_family = AF_INET;
-        
-	PRINT_INADDR (AF_INET, &(ip->ip_dst), "sendraw4\n");
 
         return sendto (fd, packet, ntohs (ip->ip_len), 0, 
                        (struct sockaddr *) &saddr_in, sizeof (saddr_in));
