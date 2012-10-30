@@ -832,7 +832,8 @@ send_map_reply (prefix_t * prefix, u_int32_t * nonce)
 	if (sendto (lisp.ctl_socket, buf, len, 0,
 		    (struct sockaddr *)&(lisp.mapsrvaddr),
 		    EXTRACT_SALEN (lisp.mapsrvaddr)) < 0) {
-		error_warn ("%s: send map reply failed", __func__);
+		error_warn ("%s: send map reply failed %s", __func__, 
+			    strerror (errno));
 		return -1;
 	}
 
