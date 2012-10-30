@@ -294,7 +294,7 @@ eid_forwarding_thread (void * param)
 	iov[1].iov_base = buf + sizeof (struct ether_header);
 
 	while (1) {
-		if (recv (eid->raw_socket, buf, sizeof (buf), 0) < 0) {
+		if ((len = recv (eid->raw_socket, buf, sizeof (buf), 0)) < 0) {
 			error_warn ("EID \"%d\" recv failed", eid->name);
 			break;
 		}
@@ -361,6 +361,7 @@ eid_forwarding_thread (void * param)
 		} else if (mn->state == MAPSTATE_ACTIVE ||
 			   mn->state == MAPSTATE_STATIC) {
 			/* LISP Encapsulated forwarding to LISP SITE */
+			iov[1].iov_len = len + sizeof (struct lisp_hdr);
 			mhdr.msg_name = &(mn->addr);
 			mhdr.msg_namelen = EXTRACT_SALEN(mn->addr);
 			sendmsg (lisp.udp_socket, &mhdr, 0);
