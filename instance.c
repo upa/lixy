@@ -307,6 +307,8 @@ eid_forwarding_thread (void * param)
 		switch (ntohs (ehdr->ether_type)) {
 		case ETH_P_IP :
 			ip = (struct ip *)(buf + sizeof (struct ether_header));
+			if (ip->ip_ttl-- < 1)
+				continue;
 			ADDRTOPREFIX (AF_INET, ip->ip_dst, 32, &dst_prefix);
 			mn = search_mapnode (lisp.rib, &dst_prefix);
 			break;
@@ -314,6 +316,8 @@ eid_forwarding_thread (void * param)
 		case ETH_P_IPV6 :
 			ip6 = (struct ip6_hdr *)
 				(buf + sizeof (struct ether_header));
+			if (ip6->ip6_hlim-- < 1)
+				continue;
 			ADDRTOPREFIX (AF_INET6, ip6->ip6_dst, 
 				      128, &dst_prefix);
 			mn = search_mapnode (lisp.rib, &dst_prefix);
