@@ -26,7 +26,7 @@ void * eid_forwarding_thread (void * param);
 	do {							\
 		if (IS_EID_THREAD_RUNNING ((eid))) {		\
 			if (pthread_cancel ((eid)->tid) == 0)	\
-				(eid)->t_flag = -1;		\
+				(eid)->t_flag = 0;		\
 			else					\
 				error_warn ("faild to stop "	\
 					    "eid \"%s\"",	\
@@ -91,6 +91,8 @@ sendraw4 (int fd, void * packet)
         saddr_in.sin_addr = ip->ip_dst;
         saddr_in.sin_family = AF_INET;
         
+	PRINT_INADDR (AF_INET, &(ip->ip_dst), "sendraw4\n");
+
         return sendto (fd, packet, ntohs (ip->ip_len), 0, 
                        (struct sockaddr *) &saddr_in, sizeof (saddr_in));
 }
@@ -298,6 +300,10 @@ eid_forwarding_thread (void * param)
 			break;
 		}
 
+		/* interface is not set  */
+		if (!eid->t_flag) 
+			continue;
+
 		ehdr = (struct ether_header *) buf;		
 		switch (ntohs (ehdr->ether_type)) {
 		case ETH_P_IP :
@@ -341,14 +347,16 @@ eid_forwarding_thread (void * param)
 					error_warn ("%s: send IPv4 Packet "
 						    "via Raw socket failed. "
 						    "EID is %s, \"%s\"",
-						    __func__, eid->name, len);
+						    __func__, eid->name,
+						    strerror (errno));
 				break;
 			case ETH_P_IPV6 :
 				if ((len = sendraw6 (lisp.raw6_socket, ip)) < 0)
 					error_warn ("%s: send IPv6 Packet "
 						    "via Raw socket failed. "
 						    "EID is %s, \"%s\"",
-						    __func__, eid->name, len);
+						    __func__, eid->name, 
+						    strerror (errno));
 				break;
 			}
 		} else if (mn->state == MAPSTATE_ACTIVE ||

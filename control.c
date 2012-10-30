@@ -777,8 +777,8 @@ cmd_show_route (int af, int socket, char ** args)
 					   addrbuf2, sizeof (addrbuf2));
 				break;	
 			default :
-				error_warn ("%s: invalid family in mapnode", 
-					    __func__);
+				error_warn ("%s: invalid family in mapnode \"%d\"", 
+					    __func__, EXTRACT_FAMILY (mn->addr));
 			}
 			
 			snprintf (buf, sizeof (buf), "%s/%d via %s %s\n", 

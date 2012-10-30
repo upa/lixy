@@ -2,8 +2,11 @@ multi:
 priority: 840
 type: txt
 help: EID Prefix
+val_help: ipv4net; IPv4 Prefix
+val_help: ipv6net; IPv6 Prefix
+allowed: echo "<IPv4prefix> <IPv6prefix>"
 
-syntax:expression: exec "/opt/vyatta/sbin/valid_address $VAR(@)"
+syntax:expression: exec "/opt/vyatta/sbin/check-ipv4-ipv6.pl $VAR(@)"
 
 update: sudo /usr/local/sbin/lixyctl eid $VAR(../@) prefix $VAR(@)
 delete: sudo /usr/local/sbin/lixyctl eid $VAR(../@) prefix delete
