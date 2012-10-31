@@ -47,7 +47,6 @@ get_locator (int af)
 
 	MYLIST_FOREACH (lisp.loc_tuple, ln) {
 		loc = (struct locator *) (ln->data);
-
 		if (af == EXTRACT_FAMILY (loc->loc_addr) || af == 0)
 			return loc;
 	}
@@ -56,7 +55,8 @@ get_locator (int af)
 }
 
 void
-set_ip_hdr (struct ip * ip, int data_len, struct in_addr src, struct in_addr dst)
+set_ip_hdr (struct ip * ip, int data_len,
+	    struct in_addr src, struct in_addr dst)
 {
 	memset (ip, 0, sizeof (struct ip));
 
@@ -73,7 +73,8 @@ set_ip_hdr (struct ip * ip, int data_len, struct in_addr src, struct in_addr dst
 }
 
 void
-set_ip6_hdr (struct ip6_hdr * ip6, int data_len, struct in6_addr src, struct in6_addr dst)
+set_ip6_hdr (struct ip6_hdr * ip6, int data_len,
+	     struct in6_addr src, struct in6_addr dst)
 {
 	memset (ip6, 0, sizeof (struct ip6_hdr));
 	
@@ -128,7 +129,7 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 	char * ptr;
 	u_int16_t tmpafi;
 	listnode_t * li;
-	struct locator * loc;
+	struct locator * loc, sloc;
 	struct ip * ip;
 	struct ip6_hdr * ip6;
 	struct udphdr * udp;
@@ -146,8 +147,9 @@ set_lisp_map_request (char * buf, int len, prefix_t * prefix)
 	/* set IP header */
 	loc = get_locator (prefix->family);
 	if (loc == NULL) {
-		error_warn ("locator is not set");
-		return -1;
+		memset (&sloc, 0, sizeof (sloc));
+		EXTRACT_FAMILY (sloc) = prefix->family;
+		loc = &sloc;
 	}
 	switch (prefix->family) {
 	case AF_INET :
@@ -721,9 +723,7 @@ process_lisp_map_reply (char * pkt)
 			if (lisploc->priority < tmplisploc->priority)
 				lisploc = tmplisploc;
 			pktlen += LISP_LOCATOR_PKT_LEN (tmplisploc);
-			PRINT_INADDR (AF_INET, tmplisploc + 1, "process map rep");
 			tmplisploc = (struct lisp_locator *)(pkt + pktlen);
-
 		}
 
 		/* register lcoator to maptable */
@@ -755,7 +755,8 @@ hmac (char *md, void *buf, size_t size, char * key, int keylen)
 
 	unsigned char result[SHA_DIGEST_LENGTH];
 
-	HMAC(EVP_sha1(), key, keylen, buf, size, result, (unsigned int *)&reslen);
+	HMAC(EVP_sha1(), key, keylen, buf, 
+	     size, result, (unsigned int *)&reslen);
 	memcpy(md, result, SHA_DIGEST_LENGTH);
 }
 
