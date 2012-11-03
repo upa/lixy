@@ -367,7 +367,7 @@ eid_forwarding_thread (void * param)
 			/* native forwarding */
 			switch (ntohs (ehdr->ether_type)) {
 			case ETH_P_IP : 
-				if ((len = sendraw4 (lisp.raw4_socket, ip)) < 0)
+				if ((len = sendraw4(lisp.raw4_socket, ip)) < 0)
 					error_warn ("%s: send IPv4 Packet "
 						    "via Raw socket failed. "
 						    "EID is %s, \"%s\"",
@@ -375,7 +375,7 @@ eid_forwarding_thread (void * param)
 						    strerror (errno));
 				break;
 			case ETH_P_IPV6 :
-				if ((len = sendraw6 (lisp.raw6_socket, ip)) < 0)
+				if ((len = sendraw6(lisp.raw6_socket, ip6))< 0)
 					error_warn ("%s: send IPv6 Packet "
 						    "via Raw socket failed. "
 						    "EID is %s, \"%s\"",
