@@ -12,6 +12,8 @@ lixy requires uthash-dev.
 
 and you can configure lisp through vyatta.
 
+- XTR configuration example
+
 	 protocols {
 	     lisp {
 	         locator 192.168.0.1 {
@@ -20,14 +22,23 @@ and you can configure lisp through vyatta.
 	         map-server 172.16.0.1
 	         site hoge {
 	             authentication-key ****************
-	             interface eth1 
 	             prefix 10.10.0.0/24
 	         }
 	     }
 	 }
 
+- PXTR configuration example
 
-and if you use lixy without vyatta, you can use _lixyctl_ command
+	 protocols {
+	     lisp {
+	         locator 192.168.3.1 {
+	         }
+	         map-server 172.16.0.1
+	     }
+	 }
+
+
+if you use lixy without vyatta, you can use _lixyctl_ command
 to configure lixy.
 
 
