@@ -109,6 +109,13 @@ install_mapnode_static (struct maptable * table, prefix_t * prefix,
 
 	if (update_mapnode (table, prefix, mn) == NULL)
 		free (mn);
+	else 
+		if (add_route_to_tun (prefix->family,
+				      &(prefix->add),
+				      prefix->bitlen) < 0)
+			error_warn ("%s: can not install static route"
+				    " to tunnel, %s",
+				    __func__, strerror (errno));
 
 	return;
 }
@@ -125,6 +132,12 @@ uninstall_mapnode_static (struct maptable * table, prefix_t * prefix)
 		return -1;
 
 	delete_mapnode (table, prefix);
+	if (del_route_to_tun (prefix->family,
+			      &(prefix->add),
+			      prefix->bitlen) < 0)
+		error_warn ("%s: can not uninstall static route"
+			    " to tunnel, %s",
+			    __func__, strerror (errno));
 	free (mn);
 
 	return 0;

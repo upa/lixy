@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <syslog.h>
 #include <sys/un.h>
 #include <netinet/tcp.h>
 #include <net/if.h>
@@ -154,6 +155,9 @@ int
 main (int argc, char * argv[])
 {
 	memset (&lisp, 0, sizeof (lisp));
+
+	openlog (LIXY_LOGNAME, LOG_CONS, LIXY_LOGFACILITY);
+	error_enable_syslog ();
 
 	lisp.udp_socket = create_lisp_udp_socket ();
 	lisp.ctl_socket = create_lisp_ctl_socket ();
