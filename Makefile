@@ -66,7 +66,6 @@ uninstall:
 VYATTA_DST = /opt/vyatta/share
 install-vyatta: install
 	cp -r vyatta/vyatta-cfg $(VYATTA_DST)/
-	cp -r vyatta/vyatta-op $(VYATTA_DST)/
 
 uninstall-vyatta:  uninstall
 	rm -r $(VYATTA_DST)/vyatta-cfg/templates/protocols/lisp
