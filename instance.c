@@ -449,8 +449,9 @@ lisp_dp_thread (void * param)
 
 		/* processing all of flags is not supported tehepero */
 
-		if (sendraw (lisp.tun_socket, ip) < 0)
-			error_warn ("%s: send raw paceket"
+		if (write (lisp.tun_socket, ip, 
+			    len - sizeof (struct lisp_hdr)) < 0)
+			error_warn ("%s: sendto IP(v4/v6) paceket "
 				    "faield, %s", __func__,
 				    strerror (errno));
 	}
@@ -692,6 +693,8 @@ is_route_scope_link (int af, void * addr)
 		}
 	}
 	
+	close (fd);
+
 	/* in IPv4, kernel does not returned "RTA_GATEWAY"
 	   when it is link scope destination
 	 */
