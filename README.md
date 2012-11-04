@@ -12,7 +12,9 @@ lixy requires uthash-dev.
 
 and you can configure lisp through vyatta.
 
-* XTR configuration example
+
+XTR configuration example
+
 
 	 protocols {
 	     lisp {
@@ -27,7 +29,10 @@ and you can configure lisp through vyatta.
 	     }
 	 }
 
-* PXTR configuration example
+
+
+PXTR configuration example
+
 
 	 protocols {
 	     lisp {
