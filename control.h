@@ -43,7 +43,6 @@ enum return_type {
  * lixyctl locator   [v4/v6_prefix] [priority|weight|m_prioritu|m_weight|create|delete]
  * lixyctl eid 	     eid_name 	 [create|delete]
  * lixyctl eid 	     eid_name 	 authkey [keystring]
- * lixyctl eid 	     eid_name 	 interface [interface name|delete]
  * lixyctl eid 	     eid_name 	 prefix [v4/v6_prefix] [delete]
  *
  * lixyctl show      ipv4-route  [active|negative|drop|queried|static]

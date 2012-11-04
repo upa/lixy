@@ -2,7 +2,7 @@
 
 CC = gcc -Wall -g
 
-MODULES = error.o instance.o map.o maptable.o control.o
+MODULES = error.o instance.o map.o maptable.o control.o iftun.o
 PATRICIA = patricia
 LIST = list
 PROGNAME = lixyd lixyctl

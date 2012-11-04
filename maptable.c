@@ -3,8 +3,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "map.h"
 #include "maptable.h"
+#include "instance.h"
 #include "sockaddrmacro.h"
+#include "error.h"
 
 struct maptable *
 create_maptable (void)
@@ -28,7 +31,8 @@ foreach_maptable (struct maptable * table,
 
 
 struct mapnode * 
-update_mapnode (struct maptable * table, prefix_t * prefix, struct mapnode * node)
+update_mapnode (struct maptable * table, prefix_t * prefix, 
+		struct mapnode * node)
 {
 	patricia_node_t * pn;
 	struct mapnode * mn;
@@ -142,7 +146,25 @@ lisp_maptable_thread (void * param)
 
 			mn->ttl -= MAPTTL_CHECK_INTERVAL;
 			if (mn->ttl <= 0) {
+				if (mn->state == MAPSTATE_ACTIVE)
+					if (del_route_to_tun (
+						    pn->prefix->family,
+						    &(pn->prefix->add),
+						    pn->prefix->bitlen) < 0)
+						error_warn ("%s: delete"
+							    "route to "
+							    "tun failed",
+							    __func__);
+
 				delete_mapnode (lisp.rib, pn->prefix);
+
+			} else {
+				switch (mn->state) {
+				case MAPSTATE_ACTIVE :
+				case MAPSTATE_NEGATIVE :
+				case MAPSTATE_QUERIED :
+					send_map_request (pn->prefix);
+				}
 			}
 		} PATRICIA_WALK_END;
 

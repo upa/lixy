@@ -11,6 +11,7 @@
 #include "map.h"
 #include "error.h"
 #include "common.h"
+#include "instance.h"
 #include "sockaddrmacro.h"
 
 #define EXTRACT_LISPAFI(sa) \
@@ -527,6 +528,7 @@ process_lisp_map_reply_record_loc_is_zero (struct lisp_record * rec)
 	mn = (struct mapnode *) malloc (sizeof (struct mapnode));
 	memset (mn, 0, sizeof (struct mapnode));
 	mn->ttl = MAPTTL_DEFAULT;
+	mn->timer = 0;
 
 	ADDRTOPREFIX (LISPAFI_TO_AF (htons (rec->eid_prefix_afi)),
 		      *(rec + 1), rec->eid_mask_len, prefix);
@@ -731,6 +733,15 @@ process_lisp_map_reply (char * pkt)
 		memset (prefix, 0, sizeof (prefix_t));
 		ADDRTOPREFIX (LISPAFI_TO_AF (ntohs (rec->eid_prefix_afi)),
 			      *(rec + 1), rec->eid_mask_len, prefix);
+
+		/* if mapnode exists, update mapnode ttl */
+		if ((mn = search_mapnode (lisp.rib, prefix)) != NULL) {
+			mn->ttl = MAPTTL_DEFAULT;
+			free (prefix);
+			return 0;
+		}
+
+		/* if does not exists, create new mapnode */
 		mn = (struct mapnode *) malloc (sizeof (struct mapnode));
 		memset (mn, 0, sizeof (mn));
 		mn->state = MAPSTATE_ACTIVE;
@@ -741,6 +752,9 @@ process_lisp_map_reply (char * pkt)
 			error_warn ("%s: can not update maptable", __func__);
 			free (prefix);
 			free (mn);
+		} else {
+			add_route_to_tun (prefix->family, &(prefix->add), 
+					  prefix->bitlen);
 		}
 	}
 	

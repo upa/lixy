@@ -13,6 +13,7 @@ struct maptable {
 
 struct mapnode {
 	int ttl;
+	int timer;
 	u_int8_t state;
 	struct sockaddr_storage addr;
 	struct locator locator;
@@ -30,6 +31,7 @@ struct mapnode {
 #define MAPSTATE_DROP		2
 #define MAPSTATE_QUERIED	3
 #define MAPSTATE_STATIC		4
+
 
 #define MAPSTATE_STRING_INIT()			\
 	{					\

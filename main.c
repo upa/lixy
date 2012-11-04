@@ -4,8 +4,11 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include <netinet/tcp.h>
+#include <net/if.h>
+#include <linux/if_packet.h>
 
 #include "common.h"
+#include "iftun.h"
 #include "error.h"
 #include "instance.h"
 #include "control.h"
@@ -94,6 +97,33 @@ create_lisp_raw_socket (int af)
 	return sock;
 }
 
+int
+create_raw_socket (void)
+{
+	int sock;
+	struct sockaddr_ll saddr_ll;
+
+	if ((sock = socket (AF_PACKET, SOCK_RAW, htons (ETH_P_ALL))) < 1) {
+		error_warn ("%s: can not create raw socket",
+			    __func__);
+		return -1;
+	}
+
+	memset (&saddr_ll, 0, sizeof (saddr_ll));
+	saddr_ll.sll_family = AF_PACKET;
+	saddr_ll.sll_protocol = htons (ETH_P_ALL);
+	saddr_ll.sll_pkttype = PACKET_HOST;
+	saddr_ll.sll_halen = ETH_ALEN;
+
+	if (bind (sock, (struct sockaddr *)&saddr_ll, sizeof (saddr_ll)) < 0){
+		error_warn ("%s: can not bind raw socket, %s",
+			    __func__, strerror (errno));
+		return -1;
+	}
+
+	return sock;
+}
+
 
 
 int
@@ -128,8 +158,10 @@ main (int argc, char * argv[])
 	lisp.udp_socket = create_lisp_udp_socket ();
 	lisp.ctl_socket = create_lisp_ctl_socket ();
 	lisp.cmd_socket = create_lisp_cmd_socket ();
-	lisp.raw4_socket = create_lisp_raw_socket (AF_INET);
-	lisp.raw6_socket = create_lisp_raw_socket (AF_INET6);
+	lisp.raw_socket = create_raw_socket ();
+	lisp.tun_socket = tun_alloc (LISP_TUNNAME);
+
+	tun_up (LISP_TUNNAME);
 
 	lisp.eid_tuple = create_list ();
 	lisp.loc_tuple = create_list ();
@@ -143,6 +175,8 @@ main (int argc, char * argv[])
 	start_lisp_thread (&(lisp.map_message_t), lisp_map_message_thread);
 	start_lisp_thread (&(lisp.maptable_t), lisp_maptable_thread);
 	start_lisp_thread (&(lisp.lisp_dp_t), lisp_dp_thread);
+	start_lisp_thread (&(lisp.lisp_dp_tun_t), lisp_dp_tun_thread);
+	start_lisp_thread (&(lisp.lisp_raw_packet_t), lisp_raw_packet_thread);
 
 	lisp_op_thread (NULL);
 

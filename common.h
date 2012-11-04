@@ -12,7 +12,7 @@
 #include "list/list.h"
 #include "patricia/patricia.h"
 
-
+#define LISP_TUNNAME			"lisp0"
 #define LISP_MAP_REGISTER_INTERVAL	10
 #define LISP_EID_NAME_LEN		16
 
@@ -25,15 +25,8 @@ struct locator {
 };
 
 struct eid {			/* EID Instance */
-	int t_flag;		/* -1 is thread is not working, 1 is working */
-	pthread_t tid;		/* Pthread ID of this EID instance */
-	int raw_socket;		/* for recieving packet from own interface */
-
 	char name[LISP_EID_NAME_LEN];
-	char ifname[IFNAMSIZ];
 	char authkey[LISP_MAX_KEYLEN];
-	
-	char * mac[ETH_ALEN];
 	list_t * prefix_tuple;
 };
 
@@ -44,8 +37,8 @@ struct lisp {
 	int udp_socket;		/* socket for sending encapsulated packet */
 	int ctl_socket; 	/* socket for sending control LISP packet */
 	int cmd_socket;		/* socket for configuration command */
-	int raw4_socket; 	/* socket for sending to eid prefix */
-	int raw6_socket; 	/* socket for sending to eid prefix */
+	int raw_socket; 	/* socket for dump packets */
+	int tun_socket;		/* socket for lisp0 interface */
 
 	list_t * eid_tuple;			/* Local EID List */
 	list_t * loc_tuple;			/* locator address list	*/
@@ -60,6 +53,8 @@ struct lisp {
 	pthread_t map_message_t;
 	pthread_t maptable_t;
 	pthread_t lisp_dp_t;
+	pthread_t lisp_dp_tun_t;
+	pthread_t lisp_raw_packet_t;
 	pthread_t lisp_op_t;
 };
 

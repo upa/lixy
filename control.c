@@ -461,45 +461,6 @@ cmd_delete_eid (char ** args)
 	return SUCCESS;
 }
 
-
-enum return_type 
-cmd_set_eid_interface (char ** args)
-{
-	char * eid_name = args[1];
-	char * ifname = args[3];
-	struct eid * eid;
-
-	if (eid_name == NULL || ifname == NULL)
-		return ERR_INVALID_COMMAND;
-
-	if (if_nametoindex (ifname) == 0) 
-		return ERR_INTERFACE_DOES_NOT_EXISTS;
-
-	if ((eid = search_eid (eid_name)) == NULL) 
-		return ERR_EID_DOES_NOT_EXISTS;
-
-	if (set_eid_iface (eid, ifname) < 0)
-		return ERR_FAILED;
-	
-	return SUCCESS;
-}
-
-
-enum return_type 
-cmd_unset_eid_interface (char ** args)
-{
-	char * eid_name = args[1];
-	struct eid * eid;
-
-	if ((eid = search_eid (eid_name)) == NULL)
-		return ERR_EID_DOES_NOT_EXISTS;
-
-	if (unset_eid_iface (eid) != 0)
-		return ERR_FAILED;
-
-	return SUCCESS;
-}
-
 enum return_type 
 cmd_set_eid_authentication_key (char ** args)
 {
@@ -699,15 +660,6 @@ config_eid (int socket, char ** args)
 		return cmd_set_eid_authentication_key (args);
 	}
 
-	else if (strcmp (action, "interface") == 0) {
-		if (args[3] == NULL)
-			return ERR_INVALID_COMMAND;
-		if (strcmp (args[3], "delete") == 0)
-			return cmd_unset_eid_interface (args);
-		cmd_unset_eid_interface (args);
-		return cmd_set_eid_interface (args);
-	}
-
 	else if (strcmp (action, "prefix") == 0) {
 		char * delete = args[4];
 		if (delete != NULL) {
@@ -805,14 +757,14 @@ cmd_write_eid (int socket, struct eid * eid)
 
 	snprintf (buf, sizeof (buf), 
 		  "Name : %s\n"
-		  "   Inteface : %s\n"
 		  "   Auth Key : %s\n"
 		  "   Prefixes :", 
-		  eid->name, eid->ifname, eid->authkey);
+		  eid->name, eid->authkey);
 
 	MYLIST_FOREACH (eid->prefix_tuple, ln) {
 		prefix = (prefix_t *) (ln->data);
-		inet_ntop (prefix->family, &(prefix->add), addrbuf, sizeof (addrbuf));
+		inet_ntop (prefix->family, &(prefix->add), 
+			   addrbuf, sizeof (addrbuf));
 		snprintf (resbuf, sizeof (resbuf), "%s %s/%d", 
 			  buf, addrbuf, prefix->bitlen);
 		strncpy (buf, resbuf, sizeof (buf));

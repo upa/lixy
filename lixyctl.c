@@ -26,7 +26,6 @@ usage (void)
 		"[create|delete|priority|weight|m_priority|m_weight] [value]\n"
 		"  eid       [eid_name]     [create|delete]\n"
 		"  eid       [eid_name]     authkey [keystring]\n"
-		"  eid       [eid_name]     interface [interface name]\n"
 		"  eid       [eid_name]     prefix [v4/v6_prefix] [delete]\n"
 		"  show      ipv4-route     "
 		"[active|negative|drop|queried|static]\n"

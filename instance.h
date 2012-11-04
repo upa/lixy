@@ -31,5 +31,12 @@ void start_lisp_thread (pthread_t * tid, void * (* thread) (void * param));
 void * lisp_map_register_thread (void * param);	/* register EID periodically */
 void * lisp_map_message_thread (void * param);	/* process message thread */
 void * lisp_dp_thread (void * param);		/* recv LISP DP packet	*/
+void * lisp_dp_tun_thread (void * param);	/* send LISP DP packet	*/
+void * lisp_raw_packet_thread (void * param);	/* watich raw socket */
+
+/* netlink functions */
+int is_route_scope_link (int af, void * addr);
+int add_route_to_tun (int af, void * addr, int prefixlen);
+int del_route_to_tun (int af, void * addr, int prefixlen);
 
 #endif /* _INSTANCE_H_*/
