@@ -946,7 +946,7 @@ cmd_install_route (char ** args)
 
 
 enum return_type
-cmd_delete_route (char ** args)
+cmd_uninstall_route (char ** args)
 {
 	int af;
 	char * c_af = args[1];
@@ -985,7 +985,7 @@ config_route (int socket, char ** args)
 		return ERR_INVALID_COMMAND;
 
 	if (strcmp (action, "delete") == 0) {
-		return cmd_delete_route (args);
+		return cmd_uninstall_route (args);
 	} else {
 		return cmd_install_route (args);
 	}
