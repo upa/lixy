@@ -43,13 +43,11 @@ struct lisp {
 	int raw_socket; 	/* socket for dump packets */
 	int tun_socket;		/* socket for lisp0 interface */
 
-	list_t * eid_tuple;			/* Local EID List */
-	list_t * loc_tuple;			/* locator address list	*/
-	struct sockaddr_storage mapsrvaddr;	/* Map Server Address	*/
-	
-	list_t * mapsrv_tuple;		/* Map Server List */
+	list_t * eid_tuple;	/* Local EID List */
+	list_t * loc_tuple;	/* locator address list	*/
+	list_t * mapsrv_tuple;	/* Map Server List */
 
-	struct maptable * rib;		/* Map Table		*/
+	struct maptable * rib;	/* Map Table		*/
 
 	list_t * cmd_tuple;	/* configuration command list */
 	char ** ctl_message;	/* return message to control */
