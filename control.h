@@ -39,7 +39,7 @@ enum return_type {
 /*
  * lixyctl [element] [value] [action]
  *	   0	     1		 2 
- * lixyctl mapserver [v4/v6_prefix|delete]
+ * lixyctl mapserver [v4/v6_prefix] ([delete])
  * lixyctl locator   [v4/v6_prefix] [priority|weight|m_prioritu|m_weight|create|delete]
  * lixyctl eid 	     eid_name 	 [create|delete]
  * lixyctl eid 	     eid_name 	 authkey [keystring]

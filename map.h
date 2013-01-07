@@ -18,7 +18,8 @@ int set_lisp_map_reply (char * buf, int len, prefix_t * prefix,
 
 int send_map_request (prefix_t * prefix);
 int send_map_register (struct eid * eid);
-int send_map_reply (prefix_t * prefix, u_int32_t * nonce);
+int send_map_reply (prefix_t * prefix, u_int32_t * nonce,
+		    struct sockaddr_storage mapsrvaddr);
 
 void set_nonce (void * ptr, int size);
 

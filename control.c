@@ -243,6 +243,31 @@ cmd_set_map_server (char ** args)
 }
 
 enum return_type 
+cmd_delete_map_server (char ** args)
+{
+	char * mapsrvcaddr = args[1];
+	struct sockaddr_storage mapsrvaddr;
+	struct addrinfo hints, * res;
+
+	/* set map server address */
+	memset (&hints, 0, sizeof (hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_protocol = IPPROTO_UDP;
+
+	if (getaddrinfo (mapsrvcaddr, LISP_CONTROL_CPORT, &hints, &res) != 0) 
+		return ERR_INVALID_ADDRESS;
+	
+	memcpy (&mapsrvaddr, res->ai_addr, res->ai_addrlen);
+	freeaddrinfo (res);
+
+	if (unset_lisp_mapserver (mapsrvaddr) != 0) 
+		return ERR_INVALID_ADDRESS;
+
+	return SUCCESS;
+}
+
+enum return_type 
 config_map_server (int socket, char ** args)
 {
 	char * action = args[2];
@@ -251,7 +276,7 @@ config_map_server (int socket, char ** args)
 		return cmd_set_map_server (args);
 
 	if (strcmp (action, "delete") == 0) 
-		return unset_lisp_mapserver ();
+		return cmd_delete_map_server (args);
 
 	return ERR_INVALID_COMMAND;
 }
@@ -804,32 +829,43 @@ cmd_show_eid (int socket, char ** args)
 enum return_type
 cmd_show_mapserver (int socket, char ** args)
 {
+	listnode_t * ln;
+	struct sockaddr_storage * mapsrvaddr;
 	char buf[CONTROL_MSG_BUF_LEN], addrbuf[ADDRBUFLEN];
 	
-	memset (buf, 0, sizeof (buf));
-	memset (addrbuf, 0, sizeof (addrbuf));
-
-	switch (EXTRACT_FAMILY (lisp.mapsrvaddr)) {
-	case AF_INET :
-		inet_ntop (AF_INET, &(EXTRACT_INADDR (lisp.mapsrvaddr)), 
-				      addrbuf, sizeof (addrbuf));
-		snprintf (buf, sizeof (buf), 
-			  "map server address : %s\n", addrbuf);
-		break;
-
-	case AF_INET6 :
-		inet_ntop (AF_INET6, &(EXTRACT_IN6ADDR (lisp.mapsrvaddr)), 
-				      addrbuf, sizeof (addrbuf));
-		snprintf (buf, sizeof (buf),
-			  "map server address : %s\n", addrbuf);
-		break;
-
-	default :
-		snprintf (buf, sizeof (buf), "map server is not defined\n");
-		break;
-	}
 	
-	WRITE_SOCKET (socket, buf);
+	MYLIST_FOREACH (lisp.mapsrv_tuple, ln) {
+
+		mapsrvaddr = (struct sockaddr_storage *) (ln->data);
+
+		memset (buf, 0, sizeof (buf));
+		memset (addrbuf, 0, sizeof (addrbuf));
+
+		switch (EXTRACT_FAMILY (*mapsrvaddr)) {
+		case AF_INET :
+			inet_ntop (AF_INET, 
+				   &(EXTRACT_INADDR (*mapsrvaddr)), 
+				   addrbuf, sizeof (addrbuf));
+			snprintf (buf, sizeof (buf), 
+				  "map server address : %s\n", addrbuf);
+			break;
+
+		case AF_INET6 :
+			inet_ntop (AF_INET6,
+				   &(EXTRACT_IN6ADDR (*mapsrvaddr)), 
+				   addrbuf, sizeof (addrbuf));
+			snprintf (buf, sizeof (buf),
+				  "map server address : %s\n", addrbuf);
+			break;
+
+		default :
+			snprintf (buf, sizeof (buf), 
+				  "invalid map server family\n");
+			break;
+		}
+	
+		WRITE_SOCKET (socket, buf);
+	}
 
 	return SUCCESS_NO_MESSAGE;
 }

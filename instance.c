@@ -198,23 +198,40 @@ unset_eid_prefix (struct eid * eid, prefix_t * prefix)
 int
 set_lisp_mapserver (struct sockaddr_storage mapsrv)
 {
+	struct sockaddr_storage * mapsrvaddr;
+
+	mapsrvaddr = (struct sockaddr_storage *) 
+		malloc (sizeof (struct sockaddr_storage));
+
 	if (EXTRACT_FAMILY (mapsrv) != AF_INET &&
 	    EXTRACT_FAMILY (mapsrv) != AF_INET6) {
 		error_warn ("%s: invalid map server address", __func__);
 		return -1;
 	}
 	
-	lisp.mapsrvaddr = mapsrv;
+	*mapsrvaddr = mapsrv;
+
+	append_listnode (lisp.mapsrv_tuple, mapsrvaddr);
 
 	return 0;
 }
 
 int
-unset_lisp_mapserver (void)
+unset_lisp_mapserver (struct sockaddr_storage mapsrv)
 {
-	memset (&(lisp.mapsrvaddr), 0, sizeof (lisp.mapsrvaddr));
+	listnode_t * ln;
+	struct sockaddr_storage * mapsrvaddr;
 
-	return 0;
+	MYLIST_FOREACH (lisp.mapsrv_tuple, ln) {
+		mapsrvaddr = (struct sockaddr_storage *) (ln->data);
+		if (memcmp (&mapsrv, mapsrvaddr, 
+			    sizeof (struct sockaddr_storage)) == 0) {
+			delete_listnode (lisp.mapsrv_tuple, mapsrvaddr);
+			return 0;
+		}
+	}
+
+	return -1;
 }
 
 int

@@ -169,6 +169,7 @@ main (int argc, char * argv[])
 
 	lisp.eid_tuple = create_list ();
 	lisp.loc_tuple = create_list ();
+	lisp.mapsrv_tuple = create_list ();
 
 	lisp.cmd_tuple = install_cmd_node ();
 	lisp.ctl_message = install_control_message ();

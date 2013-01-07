@@ -647,10 +647,14 @@ process_lisp_map_request (char * pkt)
 	int n, pktlen = 0;
 	char * eid_addr;
 	prefix_t prefix;
+	u_int16_t * locafi;
 	struct lisp_map_request * req;
 	struct lisp_map_request_record * qrec;
 
+	struct sockaddr_storage etr_addr;
+
 	memset (&prefix, 0, sizeof (prefix));
+	memset (&etr_addr, 0, sizeof (etr_addr));
 
 	/* 
 	 * in this implementation,
@@ -672,7 +676,14 @@ process_lisp_map_request (char * pkt)
 	 2 + sizeof (struct in6_addr) : 2)				\
 	
         /* Source EID AFI & address */
-	pktlen += REQUEST_LOC_LEN (pkt + pktlen);
+	locafi = (u_int16_t *) (pkt + pktlen);
+	pktlen += sizeof (u_int16_t);
+	EXTRACT_FAMILY (etr_addr) = 
+		LISPAFI_TO_AF (ntohs (*locafi));
+	FILL_SOCKADDR (LISPAFI_TO_AF (ntohs (*locafi)),
+		       &etr_addr, *(pkt + (pktlen)));
+	pktlen += (ntohs (*locafi) == LISP_AFI_IPV4)  ?
+		sizeof (struct in_addr) : sizeof (struct in6_addr);
 	
         /* ITR-RLOC-AFI and Address */
 	for (n = 0; n <= req->irc; n++)  
@@ -686,7 +697,7 @@ process_lisp_map_request (char * pkt)
 		      *eid_addr, qrec->eid_mask_len, &prefix);
 
 	int len;
-	if ((len = send_map_reply (&prefix, req->nonce)) > 0)
+	if ((len = send_map_reply (&prefix, req->nonce, etr_addr)) > 0)
 		error_warn ("%s: send map reply! %d", __func__, len);
 	else 
 		error_warn ("%s: send map reply failed! %d", __func__, len);
@@ -779,22 +790,27 @@ int
 send_map_request (prefix_t * prefix)
 {
 	int len;
+	listnode_t * ln;
 	char buf[LISP_MSG_BUF_LEN];
+	struct sockaddr * mapsrvaddr;
 	
-	if (EXTRACT_FAMILY (lisp.mapsrvaddr) == 0) {
+	if (MYLIST_COUNT (lisp.mapsrv_tuple) == 0) {
 		error_warn ("%s: map server is not defined", __func__);
 		return -1;
 	}
 
-	len = set_lisp_map_request (buf, sizeof (buf), prefix);
-	if (len < 1) {
-		return -1;
-	}
+	MYLIST_FOREACH (lisp.mapsrv_tuple, ln) {
 
-	if (sendto (lisp.ctl_socket, buf, len, 0, 
-		    (struct sockaddr *)&(lisp.mapsrvaddr), 
-		    EXTRACT_SALEN (lisp.mapsrvaddr)) < 0)
-		error_warn ("send map request failed");
+		len = set_lisp_map_request (buf, sizeof (buf), prefix);
+		if (len < 1) {
+			return -1;
+		}
+
+		mapsrvaddr = (struct sockaddr *) (ln->data);
+		if (sendto (lisp.ctl_socket, buf, len, 0, mapsrvaddr,
+			    EXTRACT_SALEN (*(mapsrvaddr))) < 0)
+			error_warn ("send map request failed");
+	}
 
 	return 0;
 }
@@ -804,8 +820,9 @@ send_map_register (struct eid * eid)
 {
 	int len;
 	char buf[LISP_MSG_BUF_LEN];
-	listnode_t * li;
+	listnode_t * li, * ln;
 	prefix_t * prefix;
+	struct sockaddr * mapsrvaddr;
 
 	MYLIST_FOREACH (eid->prefix_tuple, li) {
 		prefix = (prefix_t *) (li->data);
@@ -814,11 +831,15 @@ send_map_register (struct eid * eid)
 		if (len < 0) {
 			return -1;
 		}
-		if (sendto (lisp.ctl_socket, buf, len, 0,
-			    (struct sockaddr *)&(lisp.mapsrvaddr),
-			    EXTRACT_SALEN (lisp.mapsrvaddr)) < 0) {
-			error_warn ("%s: send map register failed", __func__);
-			return -1;
+
+		MYLIST_FOREACH (lisp.mapsrv_tuple, ln) {
+			mapsrvaddr = (struct sockaddr *) (li->data);
+			if (sendto (lisp.ctl_socket, buf, len, 0, mapsrvaddr,
+				    EXTRACT_SALEN (lisp.mapsrvaddr)) < 0) {
+				error_warn ("%s: send map register failed",
+					    __func__);
+				return -1;
+			}
 		}
 	}
 
@@ -827,7 +848,8 @@ send_map_register (struct eid * eid)
 
 
 int
-send_map_reply (prefix_t * prefix, u_int32_t * nonce)
+send_map_reply (prefix_t * prefix, u_int32_t * nonce, 
+		struct sockaddr_storage mapsrvaddr)
 {
 	int len;
 	char buf[LISP_MSG_BUF_LEN];
@@ -837,8 +859,8 @@ send_map_reply (prefix_t * prefix, u_int32_t * nonce)
 		return -1;
 
 	if (sendto (lisp.ctl_socket, buf, len, 0,
-		    (struct sockaddr *)&(lisp.mapsrvaddr),
-		    EXTRACT_SALEN (lisp.mapsrvaddr)) < 0) {
+		    (struct sockaddr *)&(mapsrvaddr),
+		    EXTRACT_SALEN (mapsrvaddr)) < 0) {
 		error_warn ("%s: send map reply failed %s", __func__, 
 			    strerror (errno));
 		return -1;
