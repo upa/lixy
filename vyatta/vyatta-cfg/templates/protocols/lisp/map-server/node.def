@@ -1,3 +1,4 @@
+multi:
 priority: 810
 type: txt
 help: LISP Map Server Address
@@ -12,5 +13,5 @@ update: if [ -e /var/run/lixy ]; then
 	fi
 
 delete: if [ -e /var/run/lixy ]; then
-		sudo /usr/local/sbin/lixyctl mapserver delete
+		sudo /usr/local/sbin/lixyctl mapserver $VAR(@) delete
 	fi
