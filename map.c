@@ -835,7 +835,7 @@ send_map_register (struct eid * eid)
 		MYLIST_FOREACH (lisp.mapsrv_tuple, ln) {
 			mapsrvaddr = (struct sockaddr *) (li->data);
 			if (sendto (lisp.ctl_socket, buf, len, 0, mapsrvaddr,
-				    EXTRACT_SALEN (lisp.mapsrvaddr)) < 0) {
+				    EXTRACT_SALEN (mapsrvaddr)) < 0) {
 				error_warn ("%s: send map register failed",
 					    __func__);
 				return -1;

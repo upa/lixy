@@ -282,17 +282,16 @@ start_lisp_thread (pthread_t * tid, void * (* thread) (void * param))
 void * 
 lisp_map_register_thread (void * param)
 {
-	listnode_t * ln;
 	struct eid * eid;
+	listnode_t * ln;
 
 	while (1) {
 		MYLIST_FOREACH (lisp.eid_tuple, ln) {
 			/* if Map server is not set, do not process */
-			if (EXTRACT_FAMILY (lisp.mapsrvaddr) == 0) 
-				continue;
-
-			eid = (struct eid *) (ln->data);
-			send_map_register (eid);
+			if (MYLIST_COUNT (lisp.mapsrv_tuple) > 0) {
+				eid = (struct eid *) (ln->data);
+				send_map_register (eid);
+			}
 		}
 		sleep (LISP_MAP_REGISTER_INTERVAL);
 	}
